@@ -28,7 +28,6 @@ const GROWTH_FACTOR = 1.5;
 export function SkillTreeProgress() {
   const [skills, setSkills] = useState<SkillProgress[]>([]);
   const [loading, setLoading] = useState(true);
-  const [progressValues, setProgressValues] = useState<Record<string, number>>({});
 
   useEffect(() => {
     getSkillProgress();
@@ -59,13 +58,8 @@ export function SkillTreeProgress() {
   }
 
   // Calculate progress percentage for current level
-  function calculateProgress(totalXP: number): number {
-    const level = calculateLevel(totalXP);
-    const currentLevelXP = getXpRequiredForLevel(level);
-    const nextLevelXP = getXpRequiredForLevel(level + 1);
-    const xpInCurrentLevel = totalXP - currentLevelXP;
-    const xpNeededForNextLevel = nextLevelXP - currentLevelXP;
-    
+  function calculateProgressPercentage(xpInCurrentLevel: number, xpNeededForNextLevel: number): number {
+    if (xpNeededForNextLevel === 0) return 0;
     return Math.min(100, Math.max(0, Math.floor((xpInCurrentLevel / xpNeededForNextLevel) * 100)));
   }
 
@@ -106,14 +100,6 @@ export function SkillTreeProgress() {
       });
 
       setSkills(formattedSkills);
-
-      // Calculate progress for each skill
-      const newProgressValues: Record<string, number> = {};
-      for (const skill of formattedSkills) {
-        newProgressValues[skill.skill_id] = calculateProgress(skill.xp);
-      }
-      setProgressValues(newProgressValues);
-
     } catch (error: any) {
       console.error('Error fetching skill progress:', error);
       toast.error("Failed to load skill progress");
@@ -140,10 +126,13 @@ export function SkillTreeProgress() {
     <div className="grid gap-4">
       {skills.map((skill) => {
         const Icon = iconMap[skill.icon as keyof typeof iconMap];
+        
+        // Calculate XP values and progress
         const currentLevelXP = getXpRequiredForLevel(skill.level);
         const nextLevelXP = getXpRequiredForLevel(skill.level + 1);
         const xpInCurrentLevel = Math.max(0, skill.xp - currentLevelXP);
         const xpNeededForNextLevel = nextLevelXP - currentLevelXP;
+        const progressPercentage = calculateProgressPercentage(xpInCurrentLevel, xpNeededForNextLevel);
 
         return (
           <div key={skill.skill_id} className="flex items-center gap-4">
@@ -160,7 +149,7 @@ export function SkillTreeProgress() {
               <div className="relative h-2 overflow-hidden rounded-full bg-muted">
                 <div
                   className={`absolute inset-y-0 left-0 transition-all bg-gradient-to-r ${skill.color}`}
-                  style={{ width: `${progressValues[skill.skill_id] || 0}%` }}
+                  style={{ width: `${progressPercentage}%` }}
                 />
               </div>
             </div>
