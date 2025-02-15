@@ -64,30 +64,38 @@ export function SkillTreeProgress() {
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) return;
 
-      // Get all skills with their associated user_skills data using a join
-      const { data, error } = await supabase
+      // First get all skills
+      const { data: skills, error: skillsError } = await supabase
         .from('skill_trees')
-        .select(`
-          *,
-          user_skills!inner (
-            xp,
-            level
-          )
-        `)
-        .eq('user_skills.user_id', user.id);
+        .select('*');
 
-      if (error) throw error;
+      if (skillsError) throw skillsError;
 
-      // Format the data
-      const formattedSkills = data.map(skill => ({
-        skill_id: skill.id,
-        name: skill.name,
-        icon: skill.icon,
-        color: skill.color,
-        xp: skill.user_skills[0].xp,
-        level: skill.user_skills[0].level,
-      }));
+      // Then get user's XP data
+      const { data: userSkills, error: userSkillsError } = await supabase
+        .from('user_skills')
+        .select('*')
+        .eq('user_id', user.id);
 
+      if (userSkillsError) throw userSkillsError;
+
+      console.log('Raw skills:', skills);
+      console.log('Raw user skills:', userSkills);
+
+      // Combine the data, using 0 XP and level 1 for skills without progress
+      const formattedSkills = skills.map(skill => {
+        const userSkill = userSkills?.find(us => us.skill_id === skill.id);
+        return {
+          skill_id: skill.id,
+          name: skill.name,
+          icon: skill.icon,
+          color: skill.color,
+          xp: userSkill?.xp || 0,
+          level: userSkill?.level || 1,
+        };
+      });
+
+      console.log('Formatted skills:', formattedSkills);
       setSkills(formattedSkills);
 
       // Calculate progress for each skill
@@ -97,7 +105,6 @@ export function SkillTreeProgress() {
       }
       setProgressValues(newProgressValues);
 
-      console.log('Fetched skill progress:', formattedSkills);
     } catch (error: any) {
       console.error('Error fetching skill progress:', error);
       toast.error("Failed to load skill progress");
