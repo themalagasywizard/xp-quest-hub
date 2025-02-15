@@ -1,6 +1,5 @@
 
 import { useEffect, useState } from "react";
-import { Progress } from "@/components/ui/progress";
 import { Brain, Dumbbell, Palette, Book, Heart } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
@@ -25,6 +24,7 @@ const iconMap = {
 export function SkillTreeProgress() {
   const [skills, setSkills] = useState<SkillProgress[]>([]);
   const [loading, setLoading] = useState(true);
+  const [progressValues, setProgressValues] = useState<Record<string, number>>({});
 
   useEffect(() => {
     getSkillProgress();
@@ -62,6 +62,13 @@ export function SkillTreeProgress() {
       }));
 
       setSkills(formattedSkills);
+
+      // Calculate progress for each skill
+      const newProgressValues: Record<string, number> = {};
+      for (const skill of formattedSkills) {
+        newProgressValues[skill.skill_id] = await calculateProgress(skill.xp, skill.level);
+      }
+      setProgressValues(newProgressValues);
     } catch (error: any) {
       toast.error(error.message);
     } finally {
@@ -70,15 +77,11 @@ export function SkillTreeProgress() {
   }
 
   async function calculateProgress(xp: number, level: number) {
-    const currentLevelXP = await calculateXpForLevel(level);
-    const nextLevelXP = await calculateXpForLevel(level + 1);
+    const currentLevelXP = Math.floor(100 * Math.pow(1.5, level - 1));
+    const nextLevelXP = Math.floor(100 * Math.pow(1.5, level));
     const levelXP = xp - currentLevelXP;
     const totalXPNeeded = nextLevelXP - currentLevelXP;
-    return Math.floor((levelXP / totalXPNeeded) * 100);
-  }
-
-  async function calculateXpForLevel(level: number) {
-    return Math.floor(100 * Math.pow(1.5, level - 1));
+    return Math.min(100, Math.max(0, Math.floor((levelXP / totalXPNeeded) * 100)));
   }
 
   if (loading) {
@@ -112,7 +115,7 @@ export function SkillTreeProgress() {
               <div className="relative h-2 overflow-hidden rounded-full bg-muted">
                 <div
                   className={`absolute inset-y-0 left-0 transition-all bg-gradient-to-r ${skill.color}`}
-                  style={{ width: `${calculateProgress(skill.xp, skill.level)}%` }}
+                  style={{ width: `${progressValues[skill.skill_id] || 0}%` }}
                 />
               </div>
             </div>
