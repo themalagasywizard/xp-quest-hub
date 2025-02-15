@@ -89,7 +89,14 @@ export function SkillTreeProgress() {
         // Calculate the current level based on total XP
         const level = calculateLevel(totalXP);
 
-        console.log(`Skill: ${skill.name}, Total XP: ${totalXP}, Level: ${level}`);
+        // Debug logging for each skill
+        console.log(`Skill: ${skill.name}`);
+        console.log(`Skill ID: ${skill.id}`);
+        console.log(`Number of logs: ${skillLogs.length}`);
+        console.log(`Individual XP values:`, skillLogs.map(log => log.xp_awarded));
+        console.log(`Total XP: ${totalXP}`);
+        console.log(`Level: ${level}`);
+        console.log('---');
         
         return {
           skill_id: skill.id,
