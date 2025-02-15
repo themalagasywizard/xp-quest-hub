@@ -59,10 +59,11 @@ export function SkillTreeProgress() {
   }
 
   // Calculate progress percentage for current level
-  function calculateProgress(xp: number, level: number): number {
+  function calculateProgress(totalXP: number): number {
+    const level = calculateLevel(totalXP);
     const currentLevelXP = getXpRequiredForLevel(level);
     const nextLevelXP = getXpRequiredForLevel(level + 1);
-    const xpInCurrentLevel = xp - currentLevelXP;
+    const xpInCurrentLevel = totalXP - currentLevelXP;
     const xpNeededForNextLevel = nextLevelXP - currentLevelXP;
     
     return Math.min(100, Math.max(0, Math.floor((xpInCurrentLevel / xpNeededForNextLevel) * 100)));
@@ -88,26 +89,11 @@ export function SkillTreeProgress() {
 
       if (logsError) throw logsError;
 
-      console.log('Raw skills:', skills);
-      console.log('Activity logs:', activityLogs);
-
       // Calculate total XP for each skill from activity logs
       const formattedSkills = skills.map(skill => {
         const skillLogs = activityLogs?.filter(log => log.skill_id === skill.id) || [];
-        console.log(`Processing skill: ${skill.name} (${skill.id})`);
-        console.log('Filtered logs for this skill:', skillLogs);
-        
-        const totalXP = skillLogs.reduce((sum, log) => {
-          console.log(`Adding XP: ${log.xp_awarded} to sum: ${sum}`);
-          return sum + (log.xp_awarded || 0);
-        }, 0);
-        
+        const totalXP = skillLogs.reduce((sum, log) => sum + (log.xp_awarded || 0), 0);
         const level = calculateLevel(totalXP);
-
-        console.log(`Final calculation for ${skill.name}:`);
-        console.log(`- Total XP: ${totalXP}`);
-        console.log(`- Level: ${level}`);
-        console.log('-------------------');
         
         return {
           skill_id: skill.id,
@@ -119,14 +105,12 @@ export function SkillTreeProgress() {
         };
       });
 
-      console.log('Formatted skills with XP from logs:', formattedSkills);
       setSkills(formattedSkills);
 
       // Calculate progress for each skill
       const newProgressValues: Record<string, number> = {};
       for (const skill of formattedSkills) {
-        newProgressValues[skill.skill_id] = calculateProgress(skill.xp, skill.level);
-        console.log(`Progress value for ${skill.name}: ${newProgressValues[skill.skill_id]}%`);
+        newProgressValues[skill.skill_id] = calculateProgress(skill.xp);
       }
       setProgressValues(newProgressValues);
 
