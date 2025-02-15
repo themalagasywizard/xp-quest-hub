@@ -57,6 +57,7 @@ export function DailyLog() {
       const today = new Date();
       today.setHours(0, 0, 0, 0);
 
+      // Get today's XP for each skill
       const { data, error } = await supabase
         .from('activity_log')
         .select('xp_awarded')
@@ -72,7 +73,6 @@ export function DailyLog() {
     }
   };
 
-  // Get today's XP on component mount
   useEffect(() => {
     getTodayXP();
   }, []);
@@ -87,14 +87,20 @@ export function DailyLog() {
       
       if (!activity) return;
 
-      const { data: skillData } = await supabase
+      // First get the skill_id for the selected skill name
+      const { data: skillData, error: skillError } = await supabase
         .from('skill_trees')
         .select('id')
         .eq('name', selectedSkill)
         .single();
 
-      if (!skillData) return;
+      if (skillError) throw skillError;
+      if (!skillData) {
+        toast.error(`Skill ${selectedSkill} not found`);
+        return;
+      }
 
+      // Log the activity with the correct skill_id
       const { data, error } = await supabase.rpc(
         'log_activity_and_update_xp',
         {
@@ -114,6 +120,7 @@ export function DailyLog() {
         xp_for_next_level: number;
       };
 
+      // Update today's total XP
       setTodayXP(prev => prev + activity.xp);
       toast.success(`Earned ${activity.xp} XP in ${selectedSkill}!`);
       
@@ -126,7 +133,7 @@ export function DailyLog() {
       setSelectedActivity("");
       setIsOpen(false);
 
-      // Emit a custom event to notify other components
+      // Emit event to update skill progress
       window.dispatchEvent(new CustomEvent('xp-updated'));
     } catch (error: any) {
       toast.error(error.message);
