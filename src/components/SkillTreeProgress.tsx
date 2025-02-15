@@ -21,6 +21,10 @@ const iconMap = {
   heart: Heart,
 };
 
+// Constants for XP calculation
+const BASE_XP = 100;
+const GROWTH_FACTOR = 1.5;
+
 export function SkillTreeProgress() {
   const [skills, setSkills] = useState<SkillProgress[]>([]);
   const [loading, setLoading] = useState(true);
@@ -39,6 +43,24 @@ export function SkillTreeProgress() {
       window.removeEventListener('xp-updated', handleXpUpdate);
     };
   }, []);
+
+  // Calculate XP required for a specific level
+  function getXpRequiredForLevel(level: number): number {
+    return Math.floor(BASE_XP * Math.pow(GROWTH_FACTOR, level - 1));
+  }
+
+  // Calculate progress percentage for current level
+  function calculateProgress(xp: number, level: number): number {
+    const currentLevelXP = getXpRequiredForLevel(level);
+    const nextLevelXP = getXpRequiredForLevel(level + 1);
+    
+    // Calculate XP progress within current level
+    const xpInCurrentLevel = xp - currentLevelXP;
+    const xpNeededForNextLevel = nextLevelXP - currentLevelXP;
+    
+    // Calculate percentage (0-100)
+    return Math.min(100, Math.max(0, Math.floor((xpInCurrentLevel / xpNeededForNextLevel) * 100)));
+  }
 
   async function getSkillProgress() {
     try {
@@ -76,21 +98,6 @@ export function SkillTreeProgress() {
     }
   }
 
-  function calculateProgress(xp: number, level: number) {
-    // For level 1, we need 100 XP
-    if (level === 1) {
-      return Math.min(100, Math.max(0, Math.floor((xp / 100) * 100)));
-    }
-    
-    // For higher levels, calculate based on the XP between current and next level
-    const currentLevelXP = Math.floor(100 * Math.pow(1.5, level - 2)); // XP needed for current level
-    const nextLevelXP = Math.floor(100 * Math.pow(1.5, level - 1)); // XP needed for next level
-    const progressInLevel = xp - currentLevelXP;
-    const xpNeededForNextLevel = nextLevelXP - currentLevelXP;
-    
-    return Math.min(100, Math.max(0, Math.floor((progressInLevel / xpNeededForNextLevel) * 100)));
-  }
-
   if (loading) {
     return <div className="animate-pulse space-y-4">
       {[...Array(5)].map((_, i) => (
@@ -109,6 +116,7 @@ export function SkillTreeProgress() {
     <div className="grid gap-4">
       {skills.map((skill) => {
         const Icon = iconMap[skill.icon as keyof typeof iconMap];
+        const nextLevelXP = getXpRequiredForLevel(skill.level + 1);
         return (
           <div key={skill.skill_id} className="flex items-center gap-4">
             <div className="flex items-center justify-center w-8 h-8 rounded-full bg-muted">
@@ -117,7 +125,9 @@ export function SkillTreeProgress() {
             <div className="flex-1 space-y-1">
               <div className="flex justify-between text-sm">
                 <span>{skill.name}</span>
-                <span className="text-muted-foreground">Level {skill.level}</span>
+                <span className="text-muted-foreground">
+                  Level {skill.level} • {skill.xp}/{nextLevelXP} XP
+                </span>
               </div>
               <div className="relative h-2 overflow-hidden rounded-full bg-muted">
                 <div
