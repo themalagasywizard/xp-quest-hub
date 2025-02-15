@@ -70,28 +70,33 @@ export function SkillTreeProgress() {
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) return;
 
-      // Get all skills with their associated user_skills data
-      const { data, error } = await supabase
+      // First get all skills
+      const { data: skillsData, error: skillsError } = await supabase
         .from('skill_trees')
-        .select(`
-          id,
-          name,
-          icon,
-          color,
-          user_skills(xp, level)
-        `)
-        .eq('user_skills.user_id', user.id);
+        .select('*');
 
-      if (error) throw error;
+      if (skillsError) throw skillsError;
 
-      const formattedSkills = data.map(skill => ({
-        skill_id: skill.id,
-        name: skill.name,
-        icon: skill.icon,
-        color: skill.color,
-        xp: skill.user_skills[0]?.xp ?? 0,
-        level: skill.user_skills[0]?.level ?? 1,
-      }));
+      // Then get user skills data
+      const { data: userSkillsData, error: userSkillsError } = await supabase
+        .from('user_skills')
+        .select('*')
+        .eq('user_id', user.id);
+
+      if (userSkillsError) throw userSkillsError;
+
+      // Map skills with their XP data
+      const formattedSkills = skillsData.map(skill => {
+        const userSkill = userSkillsData?.find(us => us.skill_id === skill.id);
+        return {
+          skill_id: skill.id,
+          name: skill.name,
+          icon: skill.icon,
+          color: skill.color,
+          xp: userSkill?.xp ?? 0,
+          level: userSkill?.level ?? 1,
+        };
+      });
 
       setSkills(formattedSkills);
 
@@ -101,8 +106,11 @@ export function SkillTreeProgress() {
         newProgressValues[skill.skill_id] = calculateProgress(skill.xp, skill.level);
       }
       setProgressValues(newProgressValues);
+
+      console.log('Current skill progress:', formattedSkills); // Debug log
     } catch (error: any) {
       toast.error(error.message);
+      console.error('Error fetching skill progress:', error); // Debug log
     } finally {
       setLoading(false);
     }
@@ -128,7 +136,7 @@ export function SkillTreeProgress() {
         const Icon = iconMap[skill.icon as keyof typeof iconMap];
         const currentLevelXP = getXpRequiredForLevel(skill.level);
         const nextLevelXP = getXpRequiredForLevel(skill.level + 1);
-        const xpInCurrentLevel = skill.xp - currentLevelXP;
+        const xpInCurrentLevel = Math.max(0, skill.xp - currentLevelXP);
         const xpNeededForNextLevel = nextLevelXP - currentLevelXP;
 
         return (
