@@ -51,14 +51,17 @@ export function SkillTreeProgress() {
 
   // Calculate progress percentage for current level
   function calculateProgress(xp: number, level: number): number {
+    // For level 1, progress is straightforward
+    if (level === 1) {
+      return Math.min(100, Math.max(0, Math.floor((xp / BASE_XP) * 100)));
+    }
+
+    // For higher levels, calculate based on XP between current and next level thresholds
     const currentLevelXP = getXpRequiredForLevel(level);
     const nextLevelXP = getXpRequiredForLevel(level + 1);
-    
-    // Calculate XP progress within current level
     const xpInCurrentLevel = xp - currentLevelXP;
     const xpNeededForNextLevel = nextLevelXP - currentLevelXP;
     
-    // Calculate percentage (0-100)
     return Math.min(100, Math.max(0, Math.floor((xpInCurrentLevel / xpNeededForNextLevel) * 100)));
   }
 
@@ -67,9 +70,16 @@ export function SkillTreeProgress() {
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) return;
 
+      // Get all skills with their associated user_skills data
       const { data, error } = await supabase
         .from('skill_trees')
-        .select('id, name, icon, color, user_skills(xp, level)')
+        .select(`
+          id,
+          name,
+          icon,
+          color,
+          user_skills!inner(xp, level)
+        `)
         .eq('user_skills.user_id', user.id);
 
       if (error) throw error;
@@ -79,8 +89,8 @@ export function SkillTreeProgress() {
         name: skill.name,
         icon: skill.icon,
         color: skill.color,
-        xp: skill.user_skills[0]?.xp ?? 0,
-        level: skill.user_skills[0]?.level ?? 1,
+        xp: skill.user_skills[0].xp,
+        level: skill.user_skills[0].level,
       }));
 
       setSkills(formattedSkills);
@@ -116,7 +126,11 @@ export function SkillTreeProgress() {
     <div className="grid gap-4">
       {skills.map((skill) => {
         const Icon = iconMap[skill.icon as keyof typeof iconMap];
+        const currentLevelXP = getXpRequiredForLevel(skill.level);
         const nextLevelXP = getXpRequiredForLevel(skill.level + 1);
+        const xpInCurrentLevel = skill.xp - currentLevelXP;
+        const xpNeededForNextLevel = nextLevelXP - currentLevelXP;
+
         return (
           <div key={skill.skill_id} className="flex items-center gap-4">
             <div className="flex items-center justify-center w-8 h-8 rounded-full bg-muted">
@@ -126,7 +140,7 @@ export function SkillTreeProgress() {
               <div className="flex justify-between text-sm">
                 <span>{skill.name}</span>
                 <span className="text-muted-foreground">
-                  Level {skill.level} • {skill.xp}/{nextLevelXP} XP
+                  Level {skill.level} • {xpInCurrentLevel}/{xpNeededForNextLevel} XP
                 </span>
               </div>
               <div className="relative h-2 overflow-hidden rounded-full bg-muted">
