@@ -1,5 +1,5 @@
 
-import { useState } from "react";
+import { useState, useCallback } from "react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Plus } from "lucide-react";
@@ -49,6 +49,34 @@ export function DailyLog() {
   const [isOpen, setIsOpen] = useState(false);
   const [todayXP, setTodayXP] = useState(0);
 
+  // Get today's XP on component mount
+  useState(() => {
+    getTodayXP();
+  }, []);
+
+  const getTodayXP = async () => {
+    try {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) return;
+
+      const today = new Date();
+      today.setHours(0, 0, 0, 0);
+
+      const { data, error } = await supabase
+        .from('activity_log')
+        .select('xp_awarded')
+        .eq('user_id', user.id)
+        .gte('created_at', today.toISOString());
+
+      if (error) throw error;
+
+      const totalXP = data.reduce((sum, activity) => sum + activity.xp_awarded, 0);
+      setTodayXP(totalXP);
+    } catch (error: any) {
+      toast.error(error.message);
+    }
+  };
+
   async function logActivity() {
     try {
       const { data: { user } } = await supabase.auth.getUser();
@@ -79,7 +107,6 @@ export function DailyLog() {
 
       if (error) throw error;
 
-      // Parse the JSON response
       const result = data as {
         new_xp: number;
         new_level: number;
@@ -94,7 +121,13 @@ export function DailyLog() {
         toast.success(`Level Up! You're now level ${result.new_level} in ${selectedSkill}!`);
       }
 
+      // Reset selection and close dialog
+      setSelectedSkill("");
+      setSelectedActivity("");
       setIsOpen(false);
+
+      // Emit a custom event to notify other components
+      window.dispatchEvent(new CustomEvent('xp-updated'));
     } catch (error: any) {
       toast.error(error.message);
     }

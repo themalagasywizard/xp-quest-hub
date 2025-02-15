@@ -26,13 +26,22 @@ export default function Dashboard() {
   useEffect(() => {
     getProfile();
     
+    // Listen for XP updates
+    const handleXpUpdate = () => {
+      getProfile();
+    };
+    window.addEventListener('xp-updated', handleXpUpdate);
+    
     const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
       if (!session) {
         navigate('/auth');
       }
     });
 
-    return () => subscription.unsubscribe();
+    return () => {
+      subscription.unsubscribe();
+      window.removeEventListener('xp-updated', handleXpUpdate);
+    };
   }, [navigate]);
 
   async function getProfile() {

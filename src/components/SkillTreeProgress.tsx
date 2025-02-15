@@ -1,3 +1,4 @@
+
 import { useEffect, useState } from "react";
 import { Progress } from "@/components/ui/progress";
 import { Brain, Dumbbell, Palette, Book, Heart } from "lucide-react";
@@ -27,6 +28,16 @@ export function SkillTreeProgress() {
 
   useEffect(() => {
     getSkillProgress();
+    
+    // Listen for XP updates
+    const handleXpUpdate = () => {
+      getSkillProgress();
+    };
+    window.addEventListener('xp-updated', handleXpUpdate);
+    
+    return () => {
+      window.removeEventListener('xp-updated', handleXpUpdate);
+    };
   }, []);
 
   async function getSkillProgress() {
