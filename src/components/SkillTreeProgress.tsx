@@ -78,7 +78,7 @@ export function SkillTreeProgress() {
           name,
           icon,
           color,
-          user_skills!inner(xp, level)
+          user_skills(xp, level)
         `)
         .eq('user_skills.user_id', user.id);
 
@@ -89,8 +89,8 @@ export function SkillTreeProgress() {
         name: skill.name,
         icon: skill.icon,
         color: skill.color,
-        xp: skill.user_skills[0].xp,
-        level: skill.user_skills[0].level,
+        xp: skill.user_skills[0]?.xp ?? 0,
+        level: skill.user_skills[0]?.level ?? 1,
       }));
 
       setSkills(formattedSkills);
