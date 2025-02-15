@@ -9,6 +9,48 @@ export type Json =
 export type Database = {
   public: {
     Tables: {
+      activity_log: {
+        Row: {
+          activity_name: string
+          created_at: string
+          id: string
+          skill_id: string | null
+          user_id: string | null
+          xp_awarded: number
+        }
+        Insert: {
+          activity_name: string
+          created_at?: string
+          id?: string
+          skill_id?: string | null
+          user_id?: string | null
+          xp_awarded: number
+        }
+        Update: {
+          activity_name?: string
+          created_at?: string
+          id?: string
+          skill_id?: string | null
+          user_id?: string | null
+          xp_awarded?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "activity_log_skill_id_fkey"
+            columns: ["skill_id"]
+            isOneToOne: false
+            referencedRelation: "skill_trees"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "activity_log_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       profiles: {
         Row: {
           created_at: string
@@ -42,12 +84,89 @@ export type Database = {
         }
         Relationships: []
       }
+      skill_trees: {
+        Row: {
+          color: string
+          created_at: string
+          icon: string
+          id: string
+          name: string
+        }
+        Insert: {
+          color: string
+          created_at?: string
+          icon: string
+          id?: string
+          name: string
+        }
+        Update: {
+          color?: string
+          created_at?: string
+          icon?: string
+          id?: string
+          name?: string
+        }
+        Relationships: []
+      }
+      user_skills: {
+        Row: {
+          last_updated: string
+          level: number | null
+          skill_id: string
+          user_id: string
+          xp: number | null
+        }
+        Insert: {
+          last_updated?: string
+          level?: number | null
+          skill_id: string
+          user_id: string
+          xp?: number | null
+        }
+        Update: {
+          last_updated?: string
+          level?: number | null
+          skill_id?: string
+          user_id?: string
+          xp?: number | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "user_skills_skill_id_fkey"
+            columns: ["skill_id"]
+            isOneToOne: false
+            referencedRelation: "skill_trees"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "user_skills_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
     }
     Views: {
       [_ in never]: never
     }
     Functions: {
-      [_ in never]: never
+      calculate_xp_for_level: {
+        Args: {
+          level_num: number
+        }
+        Returns: number
+      }
+      log_activity_and_update_xp: {
+        Args: {
+          p_user_id: string
+          p_activity_name: string
+          p_skill_id: string
+          p_xp_awarded: number
+        }
+        Returns: Json
+      }
     }
     Enums: {
       [_ in never]: never
