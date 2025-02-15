@@ -79,11 +79,19 @@ export function DailyLog() {
 
       if (error) throw error;
 
+      // Parse the JSON response
+      const result = data as {
+        new_xp: number;
+        new_level: number;
+        leveled_up: boolean;
+        xp_for_next_level: number;
+      };
+
       setTodayXP(prev => prev + activity.xp);
       toast.success(`Earned ${activity.xp} XP in ${selectedSkill}!`);
       
-      if (data.leveled_up) {
-        toast.success(`Level Up! You're now level ${data.new_level} in ${selectedSkill}!`);
+      if (result.leveled_up) {
+        toast.success(`Level Up! You're now level ${result.new_level} in ${selectedSkill}!`);
       }
 
       setIsOpen(false);

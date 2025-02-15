@@ -1,4 +1,3 @@
-
 import { useEffect, useState } from "react";
 import { Progress } from "@/components/ui/progress";
 import { Brain, Dumbbell, Palette, Book, Heart } from "lucide-react";
@@ -37,24 +36,18 @@ export function SkillTreeProgress() {
 
       const { data, error } = await supabase
         .from('skill_trees')
-        .select(`
-          id as skill_id,
-          name,
-          icon,
-          color,
-          user_skills!inner(xp, level)
-        `)
+        .select('id, name, icon, color, user_skills(xp, level)')
         .eq('user_skills.user_id', user.id);
 
       if (error) throw error;
 
       const formattedSkills = data.map(skill => ({
-        skill_id: skill.skill_id,
+        skill_id: skill.id,
         name: skill.name,
         icon: skill.icon,
         color: skill.color,
-        xp: skill.user_skills[0].xp,
-        level: skill.user_skills[0].level,
+        xp: skill.user_skills[0]?.xp ?? 0,
+        level: skill.user_skills[0]?.level ?? 1,
       }));
 
       setSkills(formattedSkills);

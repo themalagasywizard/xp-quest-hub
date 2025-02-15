@@ -21,12 +21,12 @@ export function DashboardHeader({ username, level, xpTotal, profilePicture }: Da
         </Avatar>
         <div className="flex flex-col">
           <h2 className="text-lg font-semibold">{username}</h2>
-          <span className="text-sm text-muted-foreground">Level {level}</span>
+          <span className="text-sm text-muted-foreground">Level {level || 1}</span>
         </div>
       </div>
       <Badge variant="secondary" className="flex items-center gap-1 px-3 py-1">
         <Star className="h-4 w-4 text-primary" />
-        <span className="text-sm font-medium">{xpTotal.toLocaleString()} XP</span>
+        <span className="text-sm font-medium">{(xpTotal || 0).toLocaleString()} XP</span>
       </Badge>
     </div>
   );
