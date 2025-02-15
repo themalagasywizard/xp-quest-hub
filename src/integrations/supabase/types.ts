@@ -9,63 +9,7 @@ export type Json =
 export type Database = {
   public: {
     Tables: {
-      quest_progress: {
-        Row: {
-          completed_at: string | null
-          created_at: string | null
-          id: number
-          quest_id: string
-          user_id: string
-          xp_gained: number | null
-        }
-        Insert: {
-          completed_at?: string | null
-          created_at?: string | null
-          id?: never
-          quest_id: string
-          user_id: string
-          xp_gained?: number | null
-        }
-        Update: {
-          completed_at?: string | null
-          created_at?: string | null
-          id?: never
-          quest_id?: string
-          user_id?: string
-          xp_gained?: number | null
-        }
-        Relationships: []
-      }
-      user_progress: {
-        Row: {
-          created_at: string | null
-          current_xp: number | null
-          id: number
-          level: number | null
-          streak: number | null
-          updated_at: string | null
-          user_id: string
-        }
-        Insert: {
-          created_at?: string | null
-          current_xp?: number | null
-          id?: never
-          level?: number | null
-          streak?: number | null
-          updated_at?: string | null
-          user_id: string
-        }
-        Update: {
-          created_at?: string | null
-          current_xp?: number | null
-          id?: never
-          level?: number | null
-          streak?: number | null
-          updated_at?: string | null
-          user_id?: string
-        }
-        Relationships: []
-      }
+      [_ in never]: never
     }
     Views: {
       [_ in never]: never
