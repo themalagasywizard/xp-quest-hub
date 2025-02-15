@@ -66,7 +66,7 @@ export function SkillTreeProgress() {
       // Calculate progress for each skill
       const newProgressValues: Record<string, number> = {};
       for (const skill of formattedSkills) {
-        newProgressValues[skill.skill_id] = await calculateProgress(skill.xp, skill.level);
+        newProgressValues[skill.skill_id] = calculateProgress(skill.xp, skill.level);
       }
       setProgressValues(newProgressValues);
     } catch (error: any) {
@@ -76,12 +76,19 @@ export function SkillTreeProgress() {
     }
   }
 
-  async function calculateProgress(xp: number, level: number) {
-    const currentLevelXP = Math.floor(100 * Math.pow(1.5, level - 1));
-    const nextLevelXP = Math.floor(100 * Math.pow(1.5, level));
-    const levelXP = xp - currentLevelXP;
-    const totalXPNeeded = nextLevelXP - currentLevelXP;
-    return Math.min(100, Math.max(0, Math.floor((levelXP / totalXPNeeded) * 100)));
+  function calculateProgress(xp: number, level: number) {
+    // For level 1, we need 100 XP
+    if (level === 1) {
+      return Math.min(100, Math.max(0, Math.floor((xp / 100) * 100)));
+    }
+    
+    // For higher levels, calculate based on the XP between current and next level
+    const currentLevelXP = Math.floor(100 * Math.pow(1.5, level - 2)); // XP needed for current level
+    const nextLevelXP = Math.floor(100 * Math.pow(1.5, level - 1)); // XP needed for next level
+    const progressInLevel = xp - currentLevelXP;
+    const xpNeededForNextLevel = nextLevelXP - currentLevelXP;
+    
+    return Math.min(100, Math.max(0, Math.floor((progressInLevel / xpNeededForNextLevel) * 100)));
   }
 
   if (loading) {
