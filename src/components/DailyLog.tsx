@@ -1,5 +1,5 @@
 
-import { useState, useCallback } from "react";
+import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Plus } from "lucide-react";
@@ -49,11 +49,6 @@ export function DailyLog() {
   const [isOpen, setIsOpen] = useState(false);
   const [todayXP, setTodayXP] = useState(0);
 
-  // Get today's XP on component mount
-  useState(() => {
-    getTodayXP();
-  }, []);
-
   const getTodayXP = async () => {
     try {
       const { data: { user } } = await supabase.auth.getUser();
@@ -76,6 +71,11 @@ export function DailyLog() {
       toast.error(error.message);
     }
   };
+
+  // Get today's XP on component mount
+  useEffect(() => {
+    getTodayXP();
+  }, []);
 
   async function logActivity() {
     try {
