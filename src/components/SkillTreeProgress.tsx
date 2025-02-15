@@ -49,6 +49,15 @@ export function SkillTreeProgress() {
     return Math.floor(BASE_XP * Math.pow(GROWTH_FACTOR, level - 1));
   }
 
+  // Calculate the level based on total XP
+  function calculateLevel(totalXP: number): number {
+    let level = 1;
+    while (getXpRequiredForLevel(level + 1) <= totalXP) {
+      level++;
+    }
+    return level;
+  }
+
   // Calculate progress percentage for current level
   function calculateProgress(xp: number, level: number): number {
     const currentLevelXP = getXpRequiredForLevel(level);
@@ -71,31 +80,36 @@ export function SkillTreeProgress() {
 
       if (skillsError) throw skillsError;
 
-      // Then get user's XP data
-      const { data: userSkills, error: userSkillsError } = await supabase
-        .from('user_skills')
+      // Then get all activity logs for this user
+      const { data: activityLogs, error: logsError } = await supabase
+        .from('activity_log')
         .select('*')
         .eq('user_id', user.id);
 
-      if (userSkillsError) throw userSkillsError;
+      if (logsError) throw logsError;
 
       console.log('Raw skills:', skills);
-      console.log('Raw user skills:', userSkills);
+      console.log('Activity logs:', activityLogs);
 
-      // Combine the data, using 0 XP and level 1 for skills without progress
+      // Calculate total XP for each skill from activity logs
       const formattedSkills = skills.map(skill => {
-        const userSkill = userSkills?.find(us => us.skill_id === skill.id);
+        const skillLogs = activityLogs?.filter(log => log.skill_id === skill.id) || [];
+        const totalXP = skillLogs.reduce((sum, log) => sum + (log.xp_awarded || 0), 0);
+        const level = calculateLevel(totalXP);
+
+        console.log(`Skill ${skill.name} - Total XP: ${totalXP}, Level: ${level}`);
+        
         return {
           skill_id: skill.id,
           name: skill.name,
           icon: skill.icon,
           color: skill.color,
-          xp: userSkill?.xp || 0,
-          level: userSkill?.level || 1,
+          xp: totalXP,
+          level: level,
         };
       });
 
-      console.log('Formatted skills:', formattedSkills);
+      console.log('Formatted skills with XP from logs:', formattedSkills);
       setSkills(formattedSkills);
 
       // Calculate progress for each skill
