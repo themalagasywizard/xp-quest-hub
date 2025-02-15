@@ -94,10 +94,20 @@ export function SkillTreeProgress() {
       // Calculate total XP for each skill from activity logs
       const formattedSkills = skills.map(skill => {
         const skillLogs = activityLogs?.filter(log => log.skill_id === skill.id) || [];
-        const totalXP = skillLogs.reduce((sum, log) => sum + (log.xp_awarded || 0), 0);
+        console.log(`Processing skill: ${skill.name} (${skill.id})`);
+        console.log('Filtered logs for this skill:', skillLogs);
+        
+        const totalXP = skillLogs.reduce((sum, log) => {
+          console.log(`Adding XP: ${log.xp_awarded} to sum: ${sum}`);
+          return sum + (log.xp_awarded || 0);
+        }, 0);
+        
         const level = calculateLevel(totalXP);
 
-        console.log(`Skill ${skill.name} - Total XP: ${totalXP}, Level: ${level}`);
+        console.log(`Final calculation for ${skill.name}:`);
+        console.log(`- Total XP: ${totalXP}`);
+        console.log(`- Level: ${level}`);
+        console.log('-------------------');
         
         return {
           skill_id: skill.id,
@@ -116,6 +126,7 @@ export function SkillTreeProgress() {
       const newProgressValues: Record<string, number> = {};
       for (const skill of formattedSkills) {
         newProgressValues[skill.skill_id] = calculateProgress(skill.xp, skill.level);
+        console.log(`Progress value for ${skill.name}: ${newProgressValues[skill.skill_id]}%`);
       }
       setProgressValues(newProgressValues);
 
