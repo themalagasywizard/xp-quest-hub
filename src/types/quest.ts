@@ -6,6 +6,13 @@ export interface Quest {
   xp_reward: number;
   quest_type: 'daily' | 'weekly' | 'legacy';
   created_at: string;
+  skills?: {
+    skill_id: string;
+    skill_name: string;
+    xp_share: number;
+    color: string;
+    icon: string;
+  }[];
 }
 
 export interface UserQuest {

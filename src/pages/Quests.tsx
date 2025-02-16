@@ -22,7 +22,18 @@ export default function Quests() {
   const fetchQuests = async () => {
     const { data, error } = await supabase
       .from('quests')
-      .select('*')
+      .select(`
+        *,
+        skills:quest_skills(
+          skill_id,
+          xp_share,
+          skill:skill_trees(
+            name,
+            color,
+            icon
+          )
+        )
+      `)
       .order('created_at');
 
     if (error) {
@@ -32,7 +43,14 @@ export default function Quests() {
 
     const typedQuests = data.map(quest => ({
       ...quest,
-      quest_type: quest.quest_type as Quest['quest_type']
+      quest_type: quest.quest_type as Quest['quest_type'],
+      skills: quest.skills.map((s: any) => ({
+        skill_id: s.skill_id,
+        skill_name: s.skill.name,
+        xp_share: s.xp_share,
+        color: s.skill.color,
+        icon: s.skill.icon
+      }))
     }));
 
     setQuests(typedQuests);
@@ -82,22 +100,21 @@ export default function Quests() {
       return;
     }
 
-    const { error: activityError } = await supabase.rpc(
-      'log_activity_and_update_xp',
+    // Use the new distribute_quest_xp function
+    const { error: distributeError } = await supabase.rpc(
+      'distribute_quest_xp',
       {
         p_user_id: user.id,
-        p_activity_name: `Completed Quest: ${quest.title}`,
-        p_skill_id: '2d5c37c4-6369-4cb0-a3a3-c6f45d3bda20',
-        p_xp_awarded: quest.xp_reward,
+        p_quest_id: quest.id
       }
     );
 
-    if (activityError) {
+    if (distributeError) {
       toast.error("Failed to award XP");
       return;
     }
 
-    toast.success(`Quest completed! Earned ${quest.xp_reward} XP`);
+    toast.success(`Quest completed! XP distributed to relevant skills`);
     setCompletedQuests([...completedQuests, data]);
     window.dispatchEvent(new CustomEvent('xp-updated'));
   };
@@ -119,6 +136,22 @@ export default function Quests() {
             <div className="space-y-1">
               <h4 className="text-sm font-medium">{quest.title}</h4>
               <p className="text-sm text-muted-foreground">{quest.description}</p>
+              {quest.skills && quest.skills.length > 0 && (
+                <div className="flex items-center gap-2 mt-2">
+                  {quest.skills.map((skill) => (
+                    <div
+                      key={skill.skill_id}
+                      className="flex items-center gap-1 text-xs px-2 py-1 rounded-full"
+                      style={{ backgroundColor: `${skill.color}20`, color: skill.color }}
+                    >
+                      <span>{skill.skill_name}</span>
+                      {skill.xp_share !== 100 && (
+                        <span>({skill.xp_share}%)</span>
+                      )}
+                    </div>
+                  ))}
+                </div>
+              )}
             </div>
             <div className="flex items-center gap-4">
               <span className="text-sm font-medium">+{quest.xp_reward} XP</span>

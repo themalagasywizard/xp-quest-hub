@@ -84,6 +84,45 @@ export type Database = {
         }
         Relationships: []
       }
+      quest_skills: {
+        Row: {
+          created_at: string
+          id: string
+          quest_id: string
+          skill_id: string
+          xp_share: number
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          quest_id: string
+          skill_id: string
+          xp_share?: number
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          quest_id?: string
+          skill_id?: string
+          xp_share?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "quest_skills_quest_id_fkey"
+            columns: ["quest_id"]
+            isOneToOne: false
+            referencedRelation: "quests"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "quest_skills_skill_id_fkey"
+            columns: ["skill_id"]
+            isOneToOne: false
+            referencedRelation: "skill_trees"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       quests: {
         Row: {
           created_at: string
@@ -223,6 +262,13 @@ export type Database = {
           level_num: number
         }
         Returns: number
+      }
+      distribute_quest_xp: {
+        Args: {
+          p_user_id: string
+          p_quest_id: string
+        }
+        Returns: undefined
       }
       log_activity_and_update_xp: {
         Args: {
