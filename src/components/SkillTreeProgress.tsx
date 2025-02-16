@@ -25,10 +25,13 @@ const iconMap = {
 const BASE_XP = 100;
 const GROWTH_FACTOR = 1.5;
 
-// Known skill IDs
-const SKILL_IDS = {
-  FITNESS: 'c8066fcd-13df-456f-9c7b-4e5368377827',
-  CREATIVITY: 'ccdbee23-bcba-47a8-bd69-e484e6b2717d'
+// Color gradients for different level ranges
+const getLevelGradient = (level: number) => {
+  if (level <= 1) return "from-blue-400 to-blue-500";
+  if (level <= 2) return "from-green-400 to-green-500";
+  if (level <= 3) return "from-yellow-400 to-yellow-500";
+  if (level <= 4) return "from-orange-400 to-orange-500";
+  return "from-purple-400 to-purple-500";
 };
 
 export function SkillTreeProgress() {
@@ -54,10 +57,14 @@ export function SkillTreeProgress() {
 
   function calculateLevel(totalXP: number): number {
     let level = 1;
-    while (getXpRequiredForLevel(level + 1) <= totalXP) {
+    let xpRequired = getXpRequiredForLevel(1);
+    
+    while (totalXP >= xpRequired) {
       level++;
+      xpRequired = getXpRequiredForLevel(level);
     }
-    return level;
+    
+    return level - 1;
   }
 
   async function getSkillProgress() {
@@ -65,7 +72,6 @@ export function SkillTreeProgress() {
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) return;
 
-      // Get all skills
       const { data: skillsData, error: skillsError } = await supabase
         .from('skill_trees')
         .select('*')
@@ -73,35 +79,23 @@ export function SkillTreeProgress() {
 
       if (skillsError) throw skillsError;
 
-      // Get all activity logs for this user
       const { data: logs, error: logsError } = await supabase
         .from('activity_log')
-        .select('*')
+        .select('skill_id, xp_awarded')
         .eq('user_id', user.id);
 
       if (logsError) throw logsError;
 
-      console.log('All activity logs:', logs);
-
       const formattedSkills = skillsData.map(skill => {
-        // Get logs for this specific skill
-        const skillLogs = logs?.filter(log => log.skill_id === skill.id) || [];
-        
-        // Calculate total XP
-        const totalXP = skillLogs.reduce((sum, log) => sum + (log.xp_awarded || 0), 0);
+        // Filter and sum XP for this skill
+        const totalXP = logs
+          ?.filter(log => log.skill_id === skill.id)
+          .reduce((sum, log) => sum + (log.xp_awarded || 0), 0) || 0;
 
-        // Special logging for Fitness and Creativity
-        if (skill.id === SKILL_IDS.FITNESS) {
-          console.log('Fitness logs:', skillLogs);
-          console.log('Fitness total XP:', totalXP);
-        }
-        if (skill.id === SKILL_IDS.CREATIVITY) {
-          console.log('Creativity logs:', skillLogs);
-          console.log('Creativity total XP:', totalXP);
-        }
-
-        // Calculate level based on XP
+        // Calculate level based on total XP
         const level = calculateLevel(totalXP);
+
+        console.log(`Skill: ${skill.name}, XP: ${totalXP}, Level: ${level}`);
 
         return {
           skill_id: skill.id,
@@ -123,10 +117,11 @@ export function SkillTreeProgress() {
   }
 
   function calculateProgressBar(skill: SkillProgress) {
-    const currentLevelThreshold = getXpRequiredForLevel(skill.level);
-    const nextLevelThreshold = getXpRequiredForLevel(skill.level + 1);
-    const xpInCurrentLevel = skill.xp - currentLevelThreshold;
-    const xpRequiredForNextLevel = nextLevelThreshold - currentLevelThreshold;
+    const currentLevelXP = getXpRequiredForLevel(skill.level);
+    const nextLevelXP = getXpRequiredForLevel(skill.level + 1);
+    const xpInCurrentLevel = skill.xp - currentLevelXP;
+    const xpRequiredForNextLevel = nextLevelXP - currentLevelXP;
+    
     return Math.min(100, Math.max(0, 
       Math.floor((xpInCurrentLevel / xpRequiredForNextLevel) * 100)
     ));
@@ -151,12 +146,11 @@ export function SkillTreeProgress() {
       {skills.map((skill) => {
         const Icon = iconMap[skill.icon as keyof typeof iconMap];
         const progressPercentage = calculateProgressBar(skill);
-
-        // Calculate XP for current level display
         const currentLevelXP = getXpRequiredForLevel(skill.level);
         const nextLevelXP = getXpRequiredForLevel(skill.level + 1);
         const xpInCurrentLevel = Math.max(0, skill.xp - currentLevelXP);
         const xpNeededForNextLevel = nextLevelXP - currentLevelXP;
+        const levelGradient = getLevelGradient(skill.level);
 
         return (
           <div key={skill.skill_id} className="flex items-center gap-4">
@@ -172,7 +166,7 @@ export function SkillTreeProgress() {
               </div>
               <div className="relative h-2 overflow-hidden rounded-full bg-muted">
                 <div
-                  className={`absolute inset-y-0 left-0 transition-all bg-gradient-to-r ${skill.color}`}
+                  className={`absolute inset-y-0 left-0 transition-all bg-gradient-to-r ${levelGradient}`}
                   style={{ width: `${progressPercentage}%` }}
                 />
               </div>
