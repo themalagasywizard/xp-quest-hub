@@ -1,14 +1,13 @@
 
 import { useEffect, useState } from "react";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Button } from "@/components/ui/button";
-import { Target, CheckCircle2 } from "lucide-react";
+import { Target } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { Quest, UserQuest } from "@/types/quest";
 import { toast } from "sonner";
 import { Sidebar } from "@/components/Sidebar";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { format, formatDistanceToNow } from "date-fns";
+import { formatDistanceToNow } from "date-fns";
+import { QuestList } from "@/components/quest/QuestList";
 
 export default function Quests() {
   const [quests, setQuests] = useState<Quest[]>([]);
@@ -63,6 +62,7 @@ export default function Quests() {
     }));
 
     setQuests(typedQuests);
+    setLoading(false);
   };
 
   const fetchCompletedQuests = async () => {
@@ -80,7 +80,6 @@ export default function Quests() {
     }
 
     setCompletedQuests(data);
-    setLoading(false);
   };
 
   const completeQuest = async (quest: Quest) => {
@@ -149,59 +148,6 @@ export default function Quests() {
     return `Resets ${formatDistanceToNow(resetTime, { addSuffix: true })}`;
   };
 
-  const renderQuestList = (questType: Quest['quest_type']) => {
-    return quests
-      .filter(quest => quest.quest_type === questType)
-      .map((quest) => {
-        const completed = isQuestCompleted(quest.id);
-        const resetTimeDisplay = getResetTimeDisplay(quest.id);
-
-        return (
-          <div
-            key={quest.id}
-            className="flex items-start justify-between p-4 rounded-lg border bg-card"
-          >
-            <div className="space-y-1">
-              <h4 className="text-sm font-medium">{quest.title}</h4>
-              <p className="text-sm text-muted-foreground">{quest.description}</p>
-              {quest.skills && quest.skills.length > 0 && (
-                <div className="flex flex-wrap gap-2 mt-2">
-                  {quest.skills.map((skill) => (
-                    <div
-                      key={skill.skill_id}
-                      className="flex items-center gap-1 text-xs px-2 py-1 rounded-full"
-                      style={{ backgroundColor: `${skill.color}20`, color: skill.color }}
-                    >
-                      <span>{skill.skill_name}</span>
-                      {skill.xp_share !== 100 && (
-                        <span>({skill.xp_share}%)</span>
-                      )}
-                    </div>
-                  ))}
-                </div>
-              )}
-              {resetTimeDisplay && (
-                <p className="text-xs text-muted-foreground mt-2">{resetTimeDisplay}</p>
-              )}
-            </div>
-            <div className="flex items-center gap-4 shrink-0">
-              <span className="text-sm font-medium">+{quest.xp_reward} XP</span>
-              {completed ? (
-                <CheckCircle2 className="h-5 w-5 text-green-500" />
-              ) : (
-                <Button
-                  size="sm"
-                  onClick={() => completeQuest(quest)}
-                >
-                  Complete
-                </Button>
-              )}
-            </div>
-          </div>
-        );
-    });
-  };
-
   if (loading) {
     return (
       <div className="flex min-h-screen bg-gray-50/50 dark:bg-gray-900/50">
@@ -235,14 +181,32 @@ export default function Quests() {
               <TabsTrigger value="weekly">Weekly</TabsTrigger>
               <TabsTrigger value="legacy">Legacy</TabsTrigger>
             </TabsList>
-            <TabsContent value="daily" className="space-y-4 mt-4">
-              {renderQuestList('daily')}
+            <TabsContent value="daily" className="mt-4">
+              <QuestList
+                quests={quests}
+                questType="daily"
+                isQuestCompleted={isQuestCompleted}
+                getResetTimeDisplay={getResetTimeDisplay}
+                onCompleteQuest={completeQuest}
+              />
             </TabsContent>
-            <TabsContent value="weekly" className="space-y-4 mt-4">
-              {renderQuestList('weekly')}
+            <TabsContent value="weekly" className="mt-4">
+              <QuestList
+                quests={quests}
+                questType="weekly"
+                isQuestCompleted={isQuestCompleted}
+                getResetTimeDisplay={getResetTimeDisplay}
+                onCompleteQuest={completeQuest}
+              />
             </TabsContent>
-            <TabsContent value="legacy" className="space-y-4 mt-4">
-              {renderQuestList('legacy')}
+            <TabsContent value="legacy" className="mt-4">
+              <QuestList
+                quests={quests}
+                questType="legacy"
+                isQuestCompleted={isQuestCompleted}
+                getResetTimeDisplay={getResetTimeDisplay}
+                onCompleteQuest={completeQuest}
+              />
             </TabsContent>
           </Tabs>
         </div>
