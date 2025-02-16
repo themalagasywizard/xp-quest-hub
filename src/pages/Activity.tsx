@@ -44,6 +44,12 @@ interface DayActivities {
   quests: CompletedQuest[];
 }
 
+const icons = {
+  brain: Brain,
+  dumbbell: Dumbbell,
+  palette: Palette,
+} as const;
+
 export default function Activity() {
   const [selectedDate, setSelectedDate] = useState<Date | undefined>(undefined);
   const [dayActivities, setDayActivities] = useState<DayActivities | null>(null);
@@ -135,12 +141,7 @@ export default function Activity() {
   const getActivityIcon = (activity: ActivityLog) => {
     if (!activity.skill) return null;
     
-    const IconComponent = {
-      brain: Brain,
-      dumbbell: Dumbbell,
-      palette: Palette,
-    }[activity.skill.icon as keyof typeof icons] || Brain;
-
+    const IconComponent = icons[activity.skill.icon as keyof typeof icons] || Brain;
     return <IconComponent className="h-4 w-4" style={{ color: activity.skill.color }} />;
   };
 

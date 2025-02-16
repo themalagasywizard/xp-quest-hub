@@ -1,15 +1,16 @@
+
 import {
   BrowserRouter as Router,
   Routes,
   Route,
   Navigate,
 } from "react-router-dom";
-import { ThemeProvider } from "@/components/theme-provider";
-import { Dashboard } from "@/pages/Dashboard";
-import { Quests } from "@/pages/Quests";
-import { Settings } from "@/pages/Settings";
-import { Auth } from "@/pages/Auth";
-import { NotFound } from "@/pages/NotFound";
+import { ThemeProvider } from "@/components/ui/theme-provider";
+import Dashboard from "@/pages/Dashboard";
+import Quests from "@/pages/Quests";
+import Settings from "@/pages/Settings";
+import Auth from "@/pages/Auth";
+import NotFound from "@/pages/NotFound";
 import { Toaster } from "@/components/ui/toaster";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import Activity from "@/pages/Activity";
