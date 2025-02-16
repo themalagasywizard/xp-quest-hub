@@ -48,6 +48,7 @@ export function useQuests() {
       ...quest,
       quest_type: quest.quest_type as Quest['quest_type'],
       completion_type: quest.completion_type as Quest['completion_type'] | undefined,
+      completion_requirement: quest.completion_requirement as Quest['completion_requirement'] | undefined,
       skills: quest.skills.map((s: any) => ({
         skill_id: s.skill_id,
         skill_name: s.skill.name,
@@ -55,7 +56,7 @@ export function useQuests() {
         color: s.skill.color,
         icon: s.skill.icon
       }))
-    }));
+    })) satisfies Quest[];
 
     setQuests(typedQuests);
     setLoading(false);
