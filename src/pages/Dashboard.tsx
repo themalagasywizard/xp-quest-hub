@@ -7,6 +7,7 @@ import { DashboardHeader } from "@/components/DashboardHeader";
 import { SkillTreeProgress } from "@/components/SkillTreeProgress";
 import { DailyLog } from "@/components/DailyLog";
 import { ChallengesWidget } from "@/components/ChallengesWidget";
+import { QuestsWidget } from "@/components/QuestsWidget";
 import { Sidebar } from "@/components/Sidebar";
 
 interface Profile {
@@ -98,7 +99,7 @@ export default function Dashboard() {
             </div>
             
             <div className="md:col-span-4 space-y-6">
-              {/* Additional widgets can be added here */}
+              <QuestsWidget />
             </div>
           </div>
         </div>

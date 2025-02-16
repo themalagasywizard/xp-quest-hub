@@ -84,6 +84,33 @@ export type Database = {
         }
         Relationships: []
       }
+      quests: {
+        Row: {
+          created_at: string
+          description: string
+          id: string
+          quest_type: string
+          title: string
+          xp_reward: number
+        }
+        Insert: {
+          created_at?: string
+          description: string
+          id?: string
+          quest_type: string
+          title: string
+          xp_reward: number
+        }
+        Update: {
+          created_at?: string
+          description?: string
+          id?: string
+          quest_type?: string
+          title?: string
+          xp_reward?: number
+        }
+        Relationships: []
+      }
       skill_trees: {
         Row: {
           color: string
@@ -107,6 +134,45 @@ export type Database = {
           name?: string
         }
         Relationships: []
+      }
+      user_quests: {
+        Row: {
+          completed_at: string
+          created_at: string
+          id: string
+          quest_id: string
+          user_id: string
+        }
+        Insert: {
+          completed_at?: string
+          created_at?: string
+          id?: string
+          quest_id: string
+          user_id: string
+        }
+        Update: {
+          completed_at?: string
+          created_at?: string
+          id?: string
+          quest_id?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "user_quests_quest_id_fkey"
+            columns: ["quest_id"]
+            isOneToOne: false
+            referencedRelation: "quests"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "user_quests_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       user_skills: {
         Row: {
