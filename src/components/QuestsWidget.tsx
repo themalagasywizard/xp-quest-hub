@@ -1,4 +1,3 @@
-
 import { useEffect, useState } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -28,7 +27,12 @@ export function QuestsWidget() {
       return;
     }
 
-    setQuests(data);
+    const typedQuests = data.map(quest => ({
+      ...quest,
+      quest_type: quest.quest_type as Quest['quest_type']
+    }));
+
+    setQuests(typedQuests);
   };
 
   const fetchCompletedQuests = async () => {
@@ -75,7 +79,6 @@ export function QuestsWidget() {
       return;
     }
 
-    // Log activity to award XP
     const { error: activityError } = await supabase.rpc(
       'log_activity_and_update_xp',
       {
@@ -94,7 +97,6 @@ export function QuestsWidget() {
     toast.success(`Quest completed! Earned ${quest.xp_reward} XP`);
     setCompletedQuests([...completedQuests, data]);
     
-    // Trigger XP update in the UI
     window.dispatchEvent(new CustomEvent('xp-updated'));
   };
 
