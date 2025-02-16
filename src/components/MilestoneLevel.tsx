@@ -1,8 +1,11 @@
+
 import { Badge } from "@/components/ui/badge";
 import { Progress } from "@/components/ui/progress";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import { Crown, Lock } from "lucide-react";
+
 type MilestoneLevel = 'none' | 'five' | 'ten' | 'twentyfive' | 'fifty' | 'hundred';
+
 interface MilestoneLevelProps {
   milestone: MilestoneLevel;
   skillLevels: {
@@ -11,6 +14,7 @@ interface MilestoneLevelProps {
     color: string;
   }[];
 }
+
 const MILESTONE_REQUIREMENTS = {
   none: {
     level: 1,
@@ -37,6 +41,7 @@ const MILESTONE_REQUIREMENTS = {
     requirement: 100
   }
 };
+
 const MILESTONE_COLORS = {
   none: "bg-gray-100 dark:bg-gray-800",
   five: "bg-blue-100 dark:bg-blue-900",
@@ -45,6 +50,7 @@ const MILESTONE_COLORS = {
   fifty: "bg-orange-100 dark:bg-orange-900",
   hundred: "bg-purple-100 dark:bg-purple-900"
 };
+
 const MILESTONE_TEXT = {
   none: "Novice",
   five: "Initiate",
@@ -53,13 +59,16 @@ const MILESTONE_TEXT = {
   fifty: "Master",
   hundred: "Grandmaster"
 };
+
 export function MilestoneLevel({
   milestone,
   skillLevels
 }: MilestoneLevelProps) {
   if (!milestone || !skillLevels) return null;
+
   const currentRequirement = MILESTONE_REQUIREMENTS[milestone];
   const nextMilestone = Object.entries(MILESTONE_REQUIREMENTS).find(([, value]) => value.level > currentRequirement.level);
+
   const getNextRequiredLevels = () => {
     if (!nextMilestone) return [];
     const [, {
@@ -71,7 +80,9 @@ export function MilestoneLevel({
       progress: skill.level / requirement * 100
     }));
   };
+
   const requirementsProgress = getNextRequiredLevels();
+
   return <div className="space-y-2">
       <div className="flex items-center gap-2">
         <Badge variant="secondary" className={`${MILESTONE_COLORS[milestone]} flex items-center gap-2`}>
@@ -84,14 +95,37 @@ export function MilestoneLevel({
                 <Lock className="h-4 w-4 text-muted-foreground" />
               </TooltipTrigger>
               <TooltipContent>
-                <p>Next milestone requirements:</p>
+                <p className="font-medium mb-2">Next milestone requirements:</p>
+                <div className="space-y-1.5">
+                  {requirementsProgress.map(skill => (
+                    <p key={skill.name} className="text-sm">
+                      {skill.name}: Level {skill.level}/{skill.required}
+                    </p>
+                  ))}
+                </div>
               </TooltipContent>
             </Tooltip>
           </TooltipProvider>}
       </div>
 
       {requirementsProgress.length > 0 && <div className="space-y-3 mt-4">
-          {requirementsProgress.map(skill => {})}
+          {requirementsProgress.map(skill => (
+            <div key={skill.name} className="space-y-1">
+              <div className="flex justify-between text-xs">
+                <span className="font-medium" style={{ color: skill.color }}>{skill.name}</span>
+                <span className="text-muted-foreground">
+                  Level {skill.level}/{skill.required}
+                </span>
+              </div>
+              <Progress 
+                value={skill.progress} 
+                className="h-1.5"
+                style={{ 
+                  ['--progress-background' as string]: skill.color 
+                }}
+              />
+            </div>
+          ))}
         </div>}
     </div>;
 }
