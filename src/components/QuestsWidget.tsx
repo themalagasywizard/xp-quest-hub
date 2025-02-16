@@ -1,4 +1,3 @@
-
 import { useEffect, useState } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -108,44 +107,53 @@ export function QuestsWidget() {
     const { data: { user } } = await supabase.auth.getUser();
     if (!user) return;
 
-    const { data, error } = await supabase
-      .from('user_quests')
-      .insert([
-        {
-          user_id: user.id,
-          quest_id: quest.id,
+    try {
+      const { data, error } = await supabase
+        .from('user_quests')
+        .insert([
+          {
+            user_id: user.id,
+            quest_id: quest.id,
+          }
+        ])
+        .select()
+        .single();
+
+      if (error) {
+        if (error.code === '23505') {
+          toast.error("You've already completed this quest today!");
+          await fetchCompletedQuests();
+          return;
+        } else {
+          console.error("Quest completion error:", error);
+          toast.error("Failed to complete quest");
+          return;
         }
-      ])
-      .select()
-      .single();
-
-    if (error) {
-      if (error.code === '23505') {
-        toast.error("You've already completed this quest today!");
-      } else {
-        toast.error("Failed to complete quest");
       }
-      return;
-    }
 
-    const { error: distributeError } = await supabase.rpc(
-      'distribute_quest_xp',
-      {
-        p_user_id: user.id,
-        p_quest_id: quest.id
+      const { error: distributeError } = await supabase.rpc(
+        'distribute_quest_xp',
+        {
+          p_user_id: user.id,
+          p_quest_id: quest.id
+        }
+      );
+
+      if (distributeError) {
+        console.error("XP distribution error:", distributeError);
+        toast.error("Failed to award XP");
+        return;
       }
-    );
 
-    if (distributeError) {
-      toast.error("Failed to award XP");
-      return;
+      toast.success(`Quest completed! XP distributed to relevant skills`);
+      setCompletedQuests([...completedQuests, data]);
+      selectRandomQuests(); // Select new quests after completion
+      
+      window.dispatchEvent(new CustomEvent('xp-updated'));
+    } catch (err) {
+      console.error("Quest completion error:", err);
+      toast.error("An unexpected error occurred");
     }
-
-    toast.success(`Quest completed! XP distributed to relevant skills`);
-    setCompletedQuests([...completedQuests, data]);
-    selectRandomQuests(); // Select new quests after completion
-    
-    window.dispatchEvent(new CustomEvent('xp-updated'));
   };
 
   const isQuestCompleted = (questId: string) => {
