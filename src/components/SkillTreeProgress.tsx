@@ -27,10 +27,10 @@ const GROWTH_FACTOR = 1.5;
 
 // Color gradients for different level ranges
 const getLevelGradient = (level: number) => {
-  if (level <= 1) return "from-blue-400 to-blue-500";
-  if (level <= 2) return "from-green-400 to-green-500";
-  if (level <= 3) return "from-yellow-400 to-yellow-500";
-  if (level <= 4) return "from-orange-400 to-orange-500";
+  if (level === 0) return "from-blue-400 to-blue-500";
+  if (level === 1) return "from-green-400 to-green-500";
+  if (level === 2) return "from-yellow-400 to-yellow-500";
+  if (level === 3) return "from-orange-400 to-orange-500";
   return "from-purple-400 to-purple-500";
 };
 
@@ -56,8 +56,10 @@ export function SkillTreeProgress() {
   }
 
   function calculateLevel(totalXP: number): number {
+    if (totalXP === 0) return 0;
+    
     let level = 1;
-    let xpRequired = getXpRequiredForLevel(1);
+    let xpRequired = getXpRequiredForLevel(level);
     
     while (totalXP >= xpRequired) {
       level++;
@@ -72,7 +74,6 @@ export function SkillTreeProgress() {
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) return;
 
-      // First get all skills data
       const { data: skillsData, error: skillsError } = await supabase
         .from('skill_trees')
         .select('*')
@@ -83,7 +84,6 @@ export function SkillTreeProgress() {
         throw skillsError;
       }
 
-      // Now get all activity logs for the user with explicit skill_id selection
       const { data: logs, error: logsError } = await supabase
         .from('activity_log')
         .select('skill_id, xp_awarded')
@@ -93,10 +93,6 @@ export function SkillTreeProgress() {
         console.error('Error fetching logs:', logsError);
         throw logsError;
       }
-
-      // Debug the raw data
-      console.log('All skills:', skillsData);
-      console.log('All activity logs:', logs);
 
       // Process each skill
       const formattedSkills = skillsData.map(skill => {
@@ -108,15 +104,6 @@ export function SkillTreeProgress() {
         
         // Calculate level based on total XP
         const level = calculateLevel(totalXP);
-
-        // Debug logging
-        console.log(`Skill: ${skill.name}`);
-        console.log(`- Skill ID: ${skill.id}`);
-        console.log(`- Total XP: ${totalXP}`);
-        console.log(`- Level: ${level}`);
-        console.log(`- Number of logs: ${skillLogs.length}`);
-        console.log(`- Individual XP values:`, skillLogs.map(log => log.xp_awarded));
-        console.log('---');
 
         return {
           skill_id: skill.id,
@@ -138,7 +125,9 @@ export function SkillTreeProgress() {
   }
 
   function calculateProgressBar(skill: SkillProgress) {
-    const currentLevelXP = getXpRequiredForLevel(skill.level);
+    if (skill.level === 0 && skill.xp === 0) return 0;
+    
+    const currentLevelXP = skill.level === 0 ? 0 : getXpRequiredForLevel(skill.level);
     const nextLevelXP = getXpRequiredForLevel(skill.level + 1);
     const xpInCurrentLevel = skill.xp - currentLevelXP;
     const xpRequiredForNextLevel = nextLevelXP - currentLevelXP;
@@ -167,9 +156,9 @@ export function SkillTreeProgress() {
       {skills.map((skill) => {
         const Icon = iconMap[skill.icon as keyof typeof iconMap];
         const progressPercentage = calculateProgressBar(skill);
-        const currentLevelXP = getXpRequiredForLevel(skill.level);
+        const currentLevelXP = skill.level === 0 ? 0 : getXpRequiredForLevel(skill.level);
         const nextLevelXP = getXpRequiredForLevel(skill.level + 1);
-        const xpInCurrentLevel = Math.max(0, skill.xp - currentLevelXP);
+        const xpInCurrentLevel = skill.xp - currentLevelXP;
         const xpNeededForNextLevel = nextLevelXP - currentLevelXP;
         const levelGradient = getLevelGradient(skill.level);
 
