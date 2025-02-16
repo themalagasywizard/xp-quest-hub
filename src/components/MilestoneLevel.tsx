@@ -81,7 +81,7 @@ export function MilestoneLevel({
         {nextMilestone && <TooltipProvider>
             <Tooltip>
               <TooltipTrigger>
-                <Lock className="h-4 w-4 text-muted-foreground" />
+                
               </TooltipTrigger>
               <TooltipContent>
                 <p className="font-medium mb-2">Next milestone requirements:</p>
