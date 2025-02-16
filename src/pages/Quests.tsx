@@ -8,15 +8,24 @@ import { Quest, UserQuest } from "@/types/quest";
 import { toast } from "sonner";
 import { Sidebar } from "@/components/Sidebar";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { format, formatDistanceToNow } from "date-fns";
 
 export default function Quests() {
   const [quests, setQuests] = useState<Quest[]>([]);
-  const [completedQuests, setCompletedQuests] = useState<UserQuest[]>([]);
+  const [completedQuests, setCompletedQuests] = useState<(UserQuest & { reset_time: string })[]>([]);
   const [loading, setLoading] = useState(true);
+  const [now, setNow] = useState(new Date());
 
   useEffect(() => {
     fetchQuests();
     fetchCompletedQuests();
+
+    // Update timer every minute
+    const interval = setInterval(() => {
+      setNow(new Date());
+    }, 60000);
+
+    return () => clearInterval(interval);
   }, []);
 
   const fetchQuests = async () => {
@@ -60,12 +69,10 @@ export default function Quests() {
     const { data: { user } } = await supabase.auth.getUser();
     if (!user) return;
 
-    const today = new Date().toISOString().split('T')[0];
     const { data, error } = await supabase
       .from('user_quests')
       .select('*')
-      .eq('user_id', user.id)
-      .eq('completed_at', today);
+      .eq('user_id', user.id);
 
     if (error) {
       toast.error("Failed to fetch completed quests");
@@ -93,14 +100,13 @@ export default function Quests() {
 
     if (error) {
       if (error.code === '23505') {
-        toast.error("You've already completed this quest today!");
+        toast.error("You've already completed this quest!");
       } else {
         toast.error("Failed to complete quest");
       }
       return;
     }
 
-    // Use the new distribute_quest_xp function
     const { error: distributeError } = await supabase.rpc(
       'distribute_quest_xp',
       {
@@ -119,15 +125,31 @@ export default function Quests() {
     window.dispatchEvent(new CustomEvent('xp-updated'));
   };
 
-  const isQuestCompleted = (questId: string) => {
-    return completedQuests.some(cq => cq.quest_id === questId);
+  const isQuestAvailable = (questId: string) => {
+    const completedQuest = completedQuests.find(cq => cq.quest_id === questId);
+    if (!completedQuest) return true;
+
+    const resetTime = new Date(completedQuest.reset_time);
+    return now >= resetTime;
+  };
+
+  const getResetTimeDisplay = (questId: string) => {
+    const completedQuest = completedQuests.find(cq => cq.quest_id === questId);
+    if (!completedQuest) return null;
+
+    const resetTime = new Date(completedQuest.reset_time);
+    if (now >= resetTime) return null;
+
+    return `Resets ${formatDistanceToNow(resetTime, { addSuffix: true })}`;
   };
 
   const renderQuestList = (questType: Quest['quest_type']) => {
     return quests
       .filter(quest => quest.quest_type === questType)
       .map((quest) => {
-        const completed = isQuestCompleted(quest.id);
+        const completed = !isQuestAvailable(quest.id);
+        const resetTimeDisplay = getResetTimeDisplay(quest.id);
+
         return (
           <div
             key={quest.id}
@@ -151,6 +173,9 @@ export default function Quests() {
                     </div>
                   ))}
                 </div>
+              )}
+              {resetTimeDisplay && (
+                <p className="text-xs text-muted-foreground mt-2">{resetTimeDisplay}</p>
               )}
             </div>
             <div className="flex items-center gap-4">

@@ -21,4 +21,5 @@ export interface UserQuest {
   quest_id: string;
   completed_at: string;
   created_at: string;
+  reset_time: string;
 }

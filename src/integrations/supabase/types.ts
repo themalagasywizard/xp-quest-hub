@@ -183,6 +183,7 @@ export type Database = {
           created_at: string
           id: string
           quest_id: string
+          reset_time: string | null
           user_id: string
         }
         Insert: {
@@ -190,6 +191,7 @@ export type Database = {
           created_at?: string
           id?: string
           quest_id: string
+          reset_time?: string | null
           user_id: string
         }
         Update: {
@@ -197,6 +199,7 @@ export type Database = {
           created_at?: string
           id?: string
           quest_id?: string
+          reset_time?: string | null
           user_id?: string
         }
         Relationships: [
@@ -273,6 +276,12 @@ export type Database = {
         }
         Returns: undefined
       }
+      get_next_reset_time: {
+        Args: {
+          quest_type: string
+        }
+        Returns: string
+      }
       log_activity_and_update_xp: {
         Args: {
           p_user_id: string
@@ -281,6 +290,13 @@ export type Database = {
           p_xp_awarded: number
         }
         Returns: Json
+      }
+      should_quest_be_available: {
+        Args: {
+          p_quest_type: string
+          p_last_completion_date: string
+        }
+        Returns: boolean
       }
     }
     Enums: {
