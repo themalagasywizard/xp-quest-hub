@@ -1,4 +1,3 @@
-
 import { useEffect, useState } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -6,12 +5,14 @@ import { Target, CheckCircle2 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { Quest, UserQuest } from "@/types/quest";
 import { toast } from "sonner";
+import { cn } from "@/lib/utils";
 
 export function QuestsWidget() {
   const [quests, setQuests] = useState<Quest[]>([]);
   const [availableQuests, setAvailableQuests] = useState<Quest[]>([]);
   const [completedQuests, setCompletedQuests] = useState<UserQuest[]>([]);
   const [loading, setLoading] = useState(true);
+  const [activeQuestType, setActiveQuestType] = useState<Quest['quest_type']>('daily');
 
   useEffect(() => {
     fetchQuests();
@@ -20,18 +21,33 @@ export function QuestsWidget() {
 
   useEffect(() => {
     if (quests.length > 0) {
-      selectRandomQuests();
+      if (activeQuestType === 'daily') {
+        selectRandomQuests();
+      } else {
+        setAvailableQuests(quests.filter(quest => quest.quest_type === activeQuestType));
+      }
     }
-  }, [quests, completedQuests]);
+  }, [quests, completedQuests, activeQuestType]);
 
   const selectRandomQuests = () => {
     const incompleteQuests = quests.filter(
       quest => quest.quest_type === 'daily' && !isQuestCompleted(quest.id)
     );
-    
-    // Randomly select 3 quests
     const shuffled = [...incompleteQuests].sort(() => 0.5 - Math.random());
     setAvailableQuests(shuffled.slice(0, 3));
+  };
+
+  const getQuestTypeTitle = (type: Quest['quest_type']) => {
+    switch (type) {
+      case 'daily':
+        return 'Daily';
+      case 'weekly':
+        return 'Weekly';
+      case 'legacy':
+        return 'Legacy';
+      default:
+        return '';
+    }
   };
 
   const fetchQuests = async () => {
@@ -145,7 +161,7 @@ export function QuestsWidget() {
         <CardHeader>
           <CardTitle className="text-sm font-medium flex items-center gap-2">
             <Target className="h-4 w-4" />
-            Daily Quests
+            Quests
           </CardTitle>
         </CardHeader>
         <CardContent>
@@ -164,8 +180,24 @@ export function QuestsWidget() {
       <CardHeader>
         <CardTitle className="text-sm font-medium flex items-center gap-2">
           <Target className="h-4 w-4" />
-          Daily Quests
+          Quests
         </CardTitle>
+        <div className="flex gap-2 mt-2">
+          {(['daily', 'weekly', 'legacy'] as const).map((type) => (
+            <Button
+              key={type}
+              variant={activeQuestType === type ? "default" : "ghost"}
+              size="sm"
+              onClick={() => setActiveQuestType(type)}
+              className={cn(
+                "flex-1",
+                activeQuestType === type && "bg-primary text-primary-foreground"
+              )}
+            >
+              {getQuestTypeTitle(type)}
+            </Button>
+          ))}
+        </div>
       </CardHeader>
       <CardContent className="space-y-4">
         {availableQuests.map((quest) => {
