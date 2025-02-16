@@ -16,6 +16,7 @@ interface Profile {
   level: number;
   streak_count: number;
   profile_picture?: string;
+  milestone_level: 'none' | 'five' | 'ten' | 'twentyfive' | 'fifty' | 'hundred';
 }
 
 export default function Dashboard() {
@@ -83,6 +84,7 @@ export default function Dashboard() {
             level={profile.level}
             xpTotal={profile.xp_total}
             profilePicture={profile.profile_picture}
+            milestone={profile.milestone_level}
           />
           
           <div className="grid gap-6 md:grid-cols-12">

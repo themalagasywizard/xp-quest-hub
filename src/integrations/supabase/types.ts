@@ -57,6 +57,7 @@ export type Database = {
           email: string
           id: string
           level: number | null
+          milestone_level: Database["public"]["Enums"]["milestone_level"] | null
           profile_picture: string | null
           streak_count: number | null
           timezone: string | null
@@ -68,6 +69,9 @@ export type Database = {
           email: string
           id: string
           level?: number | null
+          milestone_level?:
+            | Database["public"]["Enums"]["milestone_level"]
+            | null
           profile_picture?: string | null
           streak_count?: number | null
           timezone?: string | null
@@ -79,6 +83,9 @@ export type Database = {
           email?: string
           id?: string
           level?: number | null
+          milestone_level?:
+            | Database["public"]["Enums"]["milestone_level"]
+            | null
           profile_picture?: string | null
           streak_count?: number | null
           timezone?: string | null
@@ -269,12 +276,25 @@ export type Database = {
         }
         Returns: number
       }
+      calculate_xp_multiplier: {
+        Args: {
+          p_user_id: string
+          p_skill_id: string
+        }
+        Returns: number
+      }
       distribute_quest_xp: {
         Args: {
           p_user_id: string
           p_quest_id: string
         }
         Returns: undefined
+      }
+      get_milestone_level: {
+        Args: {
+          p_user_id: string
+        }
+        Returns: Database["public"]["Enums"]["milestone_level"]
       }
       get_next_reset_time: {
         Args: {
@@ -300,7 +320,13 @@ export type Database = {
       }
     }
     Enums: {
-      [_ in never]: never
+      milestone_level:
+        | "none"
+        | "five"
+        | "ten"
+        | "twentyfive"
+        | "fifty"
+        | "hundred"
     }
     CompositeTypes: {
       [_ in never]: never
