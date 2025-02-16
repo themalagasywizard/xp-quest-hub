@@ -59,6 +59,7 @@ export type Database = {
           level: number | null
           profile_picture: string | null
           streak_count: number | null
+          timezone: string | null
           username: string
           xp_total: number | null
         }
@@ -69,6 +70,7 @@ export type Database = {
           level?: number | null
           profile_picture?: string | null
           streak_count?: number | null
+          timezone?: string | null
           username: string
           xp_total?: number | null
         }
@@ -79,6 +81,7 @@ export type Database = {
           level?: number | null
           profile_picture?: string | null
           streak_count?: number | null
+          timezone?: string | null
           username?: string
           xp_total?: number | null
         }
