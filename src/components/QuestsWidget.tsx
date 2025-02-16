@@ -157,41 +157,44 @@ export function QuestsWidget() {
             return (
               <div
                 key={quest.id}
-                className="flex items-center justify-between p-4 rounded-lg border bg-card"
+                className="flex flex-col gap-3 p-4 rounded-lg border bg-card"
               >
-                <div className="space-y-1">
-                  <h4 className="text-sm font-medium">{quest.title}</h4>
-                  <p className="text-sm text-muted-foreground">{quest.description}</p>
-                  {quest.skills && quest.skills.length > 0 && (
-                    <div className="flex items-center gap-2 mt-2">
-                      {quest.skills.map((skill) => (
-                        <div
-                          key={skill.skill_id}
-                          className="flex items-center gap-1 text-xs px-2 py-1 rounded-full"
-                          style={{ backgroundColor: `${skill.color}20`, color: skill.color }}
-                        >
-                          <span>{skill.skill_name}</span>
-                          {skill.xp_share !== 100 && (
-                            <span>({skill.xp_share}%)</span>
-                          )}
-                        </div>
-                      ))}
-                    </div>
-                  )}
+                <div className="flex items-start justify-between gap-4">
+                  <div className="space-y-1 min-w-0">
+                    <h4 className="text-sm font-medium">{quest.title}</h4>
+                    <p className="text-sm text-muted-foreground">{quest.description}</p>
+                  </div>
+                  <div className="flex items-center gap-2 shrink-0">
+                    <span className="text-sm font-medium whitespace-nowrap">+{quest.xp_reward} XP</span>
+                    {completed ? (
+                      <CheckCircle2 className="h-5 w-5 text-green-500 shrink-0" />
+                    ) : (
+                      <Button
+                        size="sm"
+                        onClick={() => completeQuest(quest)}
+                        className="shrink-0"
+                      >
+                        Complete
+                      </Button>
+                    )}
+                  </div>
                 </div>
-                <div className="flex items-center gap-4">
-                  <span className="text-sm font-medium">+{quest.xp_reward} XP</span>
-                  {completed ? (
-                    <CheckCircle2 className="h-5 w-5 text-green-500" />
-                  ) : (
-                    <Button
-                      size="sm"
-                      onClick={() => completeQuest(quest)}
-                    >
-                      Complete
-                    </Button>
-                  )}
-                </div>
+                {quest.skills && quest.skills.length > 0 && (
+                  <div className="flex flex-wrap items-center gap-2">
+                    {quest.skills.map((skill) => (
+                      <div
+                        key={skill.skill_id}
+                        className="flex items-center gap-1 text-xs px-2 py-1 rounded-full"
+                        style={{ backgroundColor: `${skill.color}20`, color: skill.color }}
+                      >
+                        <span>{skill.skill_name}</span>
+                        {skill.xp_share !== 100 && (
+                          <span>({skill.xp_share}%)</span>
+                        )}
+                      </div>
+                    ))}
+                  </div>
+                )}
               </div>
             );
         })}
