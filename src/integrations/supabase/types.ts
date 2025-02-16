@@ -94,6 +94,47 @@ export type Database = {
         }
         Relationships: []
       }
+      quest_progress: {
+        Row: {
+          created_at: string
+          current_streak: number | null
+          first_activity_date: string | null
+          id: string
+          last_activity_date: string | null
+          quest_id: string
+          total_activities: number | null
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          current_streak?: number | null
+          first_activity_date?: string | null
+          id?: string
+          last_activity_date?: string | null
+          quest_id: string
+          total_activities?: number | null
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          current_streak?: number | null
+          first_activity_date?: string | null
+          id?: string
+          last_activity_date?: string | null
+          quest_id?: string
+          total_activities?: number | null
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "quest_progress_quest_id_fkey"
+            columns: ["quest_id"]
+            isOneToOne: false
+            referencedRelation: "quests"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       quest_skills: {
         Row: {
           created_at: string
@@ -135,30 +176,47 @@ export type Database = {
       }
       quests: {
         Row: {
+          completion_requirement: Json | null
+          completion_type: string | null
           created_at: string
           description: string
           id: string
+          parent_quest_id: string | null
           quest_type: string
           title: string
           xp_reward: number
         }
         Insert: {
+          completion_requirement?: Json | null
+          completion_type?: string | null
           created_at?: string
           description: string
           id?: string
+          parent_quest_id?: string | null
           quest_type: string
           title: string
           xp_reward: number
         }
         Update: {
+          completion_requirement?: Json | null
+          completion_type?: string | null
           created_at?: string
           description?: string
           id?: string
+          parent_quest_id?: string | null
           quest_type?: string
           title?: string
           xp_reward?: number
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "quests_parent_quest_id_fkey"
+            columns: ["parent_quest_id"]
+            isOneToOne: false
+            referencedRelation: "quests"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       skill_trees: {
         Row: {

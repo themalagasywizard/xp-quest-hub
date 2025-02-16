@@ -1,6 +1,7 @@
 
 import { Quest } from "@/types/quest";
 import { QuestItem } from "./QuestItem";
+import { useQuestProgress } from "@/hooks/useQuestProgress";
 
 interface QuestListProps {
   quests: Quest[];
@@ -17,6 +18,7 @@ export function QuestList({
   getResetTimeDisplay,
   onCompleteQuest
 }: QuestListProps) {
+  const { questProgress } = useQuestProgress();
   const filteredQuests = quests.filter(quest => quest.quest_type === questType);
 
   return (
@@ -28,6 +30,7 @@ export function QuestList({
           completed={isQuestCompleted(quest.id)}
           resetTimeDisplay={getResetTimeDisplay(quest.id)}
           onComplete={onCompleteQuest}
+          progress={questProgress[quest.id]}
         />
       ))}
     </div>
