@@ -13,6 +13,25 @@ export function useQuestProgress() {
 
   useEffect(() => {
     fetchQuestProgress();
+    // Listen for activity updates to refresh progress
+    const channel = supabase
+      .channel('schema-db-changes')
+      .on(
+        'postgres_changes',
+        {
+          event: '*',
+          schema: 'public',
+          table: 'quest_progress'
+        },
+        () => {
+          fetchQuestProgress();
+        }
+      )
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(channel);
+    };
   }, []);
 
   const fetchQuestProgress = async () => {
@@ -29,12 +48,14 @@ export function useQuestProgress() {
       return;
     }
 
+    console.log('Quest progress data:', data); // Debug log
+
     const progressMap: QuestProgressMap = {};
     data.forEach(progress => {
       progressMap[progress.quest_id] = {
         quest_id: progress.quest_id,
-        current_streak: progress.current_streak,
-        total_activities: progress.total_activities,
+        current_streak: progress.current_streak || 0,
+        total_activities: progress.total_activities || 0,
         last_activity_date: progress.last_activity_date,
         first_activity_date: progress.first_activity_date
       };

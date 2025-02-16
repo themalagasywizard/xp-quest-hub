@@ -20,37 +20,47 @@ export function QuestItem({
   progress 
 }: QuestItemProps) {
   const getProgressDisplay = () => {
-    if (!quest.completion_type || !progress) return null;
+    if (!quest.completion_type || !quest.completion_requirement) return null;
+
+    // Ensure we have progress data, if not, default to 0
+    const currentProgress = progress || {
+      quest_id: quest.id,
+      current_streak: 0,
+      total_activities: 0,
+      last_activity_date: null,
+      first_activity_date: null
+    };
 
     switch (quest.completion_type) {
       case 'daily_streak':
-        const requiredStreak = quest.completion_requirement?.required_streak || 0;
+        const requiredStreak = quest.completion_requirement.required_streak || 0;
         return {
-          current: progress.current_streak,
+          current: currentProgress.current_streak,
           max: requiredStreak,
-          text: `${progress.current_streak}/${requiredStreak} day streak`
+          text: `${currentProgress.current_streak}/${requiredStreak} day streak`
         };
       case 'total_activities':
-        const requiredActivities = quest.completion_requirement?.required_activities || 0;
+        const requiredActivities = quest.completion_requirement.required_activities || 0;
         return {
-          current: progress.total_activities,
+          current: currentProgress.total_activities,
           max: requiredActivities,
-          text: `${progress.total_activities}/${requiredActivities} activities`
+          text: `${currentProgress.total_activities}/${requiredActivities} activities`
         };
       case 'days_with_activity':
-        if (!progress.first_activity_date || !progress.last_activity_date) {
+        if (!currentProgress.first_activity_date || !currentProgress.last_activity_date) {
+          const requiredDays = quest.completion_requirement.required_days || 0;
           return {
             current: 0,
-            max: quest.completion_requirement?.required_days || 0,
-            text: "Not started"
+            max: requiredDays,
+            text: "0/" + requiredDays + " days"
           };
         }
         const daysPassed = Math.floor(
-          (new Date(progress.last_activity_date).getTime() - 
-           new Date(progress.first_activity_date).getTime()) / 
+          (new Date(currentProgress.last_activity_date).getTime() - 
+           new Date(currentProgress.first_activity_date).getTime()) / 
           (1000 * 60 * 60 * 24)
         );
-        const requiredDays = quest.completion_requirement?.required_days || 0;
+        const requiredDays = quest.completion_requirement.required_days || 0;
         return {
           current: daysPassed,
           max: requiredDays,
