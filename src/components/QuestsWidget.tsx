@@ -9,6 +9,7 @@ import { toast } from "sonner";
 
 export function QuestsWidget() {
   const [quests, setQuests] = useState<Quest[]>([]);
+  const [availableQuests, setAvailableQuests] = useState<Quest[]>([]);
   const [completedQuests, setCompletedQuests] = useState<UserQuest[]>([]);
   const [loading, setLoading] = useState(true);
 
@@ -16,6 +17,22 @@ export function QuestsWidget() {
     fetchQuests();
     fetchCompletedQuests();
   }, []);
+
+  useEffect(() => {
+    if (quests.length > 0) {
+      selectRandomQuests();
+    }
+  }, [quests, completedQuests]);
+
+  const selectRandomQuests = () => {
+    const incompleteQuests = quests.filter(
+      quest => quest.quest_type === 'daily' && !isQuestCompleted(quest.id)
+    );
+    
+    // Randomly select 3 quests
+    const shuffled = [...incompleteQuests].sort(() => 0.5 - Math.random());
+    setAvailableQuests(shuffled.slice(0, 3));
+  };
 
   const fetchQuests = async () => {
     const { data, error } = await supabase
@@ -113,6 +130,7 @@ export function QuestsWidget() {
 
     toast.success(`Quest completed! XP distributed to relevant skills`);
     setCompletedQuests([...completedQuests, data]);
+    selectRandomQuests(); // Select new quests after completion
     
     window.dispatchEvent(new CustomEvent('xp-updated'));
   };
@@ -150,53 +168,51 @@ export function QuestsWidget() {
         </CardTitle>
       </CardHeader>
       <CardContent className="space-y-4">
-        {quests
-          .filter(quest => quest.quest_type === 'daily')
-          .map((quest) => {
-            const completed = isQuestCompleted(quest.id);
-            return (
-              <div
-                key={quest.id}
-                className="flex flex-col gap-3 p-4 rounded-lg border bg-card"
-              >
-                <div className="flex items-start justify-between gap-4">
-                  <div className="space-y-1 min-w-0">
-                    <h4 className="text-sm font-medium">{quest.title}</h4>
-                    <p className="text-sm text-muted-foreground">{quest.description}</p>
-                  </div>
-                  <div className="flex items-center gap-2 shrink-0">
-                    <span className="text-sm font-medium whitespace-nowrap">+{quest.xp_reward} XP</span>
-                    {completed ? (
-                      <CheckCircle2 className="h-5 w-5 text-green-500 shrink-0" />
-                    ) : (
-                      <Button
-                        size="sm"
-                        onClick={() => completeQuest(quest)}
-                        className="shrink-0"
-                      >
-                        Complete
-                      </Button>
-                    )}
-                  </div>
+        {availableQuests.map((quest) => {
+          const completed = isQuestCompleted(quest.id);
+          return (
+            <div
+              key={quest.id}
+              className="flex flex-col gap-3 p-4 rounded-lg border bg-card"
+            >
+              <div className="flex items-start justify-between gap-4">
+                <div className="space-y-1 min-w-0">
+                  <h4 className="text-sm font-medium">{quest.title}</h4>
+                  <p className="text-sm text-muted-foreground">{quest.description}</p>
                 </div>
-                {quest.skills && quest.skills.length > 0 && (
-                  <div className="flex flex-wrap items-center gap-2">
-                    {quest.skills.map((skill) => (
-                      <div
-                        key={skill.skill_id}
-                        className="flex items-center gap-1 text-xs px-2 py-1 rounded-full"
-                        style={{ backgroundColor: `${skill.color}20`, color: skill.color }}
-                      >
-                        <span>{skill.skill_name}</span>
-                        {skill.xp_share !== 100 && (
-                          <span>({skill.xp_share}%)</span>
-                        )}
-                      </div>
-                    ))}
-                  </div>
-                )}
+                <div className="flex items-center gap-2 shrink-0">
+                  <span className="text-sm font-medium whitespace-nowrap">+{quest.xp_reward} XP</span>
+                  {completed ? (
+                    <CheckCircle2 className="h-5 w-5 text-green-500 shrink-0" />
+                  ) : (
+                    <Button
+                      size="sm"
+                      onClick={() => completeQuest(quest)}
+                      className="shrink-0"
+                    >
+                      Complete
+                    </Button>
+                  )}
+                </div>
               </div>
-            );
+              {quest.skills && quest.skills.length > 0 && (
+                <div className="flex flex-wrap items-center gap-2">
+                  {quest.skills.map((skill) => (
+                    <div
+                      key={skill.skill_id}
+                      className="flex items-center gap-1 text-xs px-2 py-1 rounded-full"
+                      style={{ backgroundColor: `${skill.color}20`, color: skill.color }}
+                    >
+                      <span>{skill.skill_name}</span>
+                      {skill.xp_share !== 100 && (
+                        <span>({skill.xp_share}%)</span>
+                      )}
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
+          );
         })}
       </CardContent>
     </Card>
