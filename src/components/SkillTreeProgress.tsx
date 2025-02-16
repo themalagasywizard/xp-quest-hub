@@ -72,21 +72,31 @@ export function SkillTreeProgress() {
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) return;
 
-      // Get all skills data
+      // First get all skills data
       const { data: skillsData, error: skillsError } = await supabase
         .from('skill_trees')
         .select('*')
         .order('name');
 
-      if (skillsError) throw skillsError;
+      if (skillsError) {
+        console.error('Error fetching skills:', skillsError);
+        throw skillsError;
+      }
 
-      // Get activity logs for the user
+      // Now get all activity logs for the user with explicit skill_id selection
       const { data: logs, error: logsError } = await supabase
         .from('activity_log')
         .select('skill_id, xp_awarded')
         .eq('user_id', user.id);
 
-      if (logsError) throw logsError;
+      if (logsError) {
+        console.error('Error fetching logs:', logsError);
+        throw logsError;
+      }
+
+      // Debug the raw data
+      console.log('All skills:', skillsData);
+      console.log('All activity logs:', logs);
 
       // Process each skill
       const formattedSkills = skillsData.map(skill => {
