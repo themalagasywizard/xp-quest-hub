@@ -1,4 +1,3 @@
-
 import { useState } from "react";
 import { format } from "date-fns";
 import { Calendar } from "@/components/ui/calendar";
@@ -12,6 +11,7 @@ import {
 } from "@/components/ui/dialog";
 import { supabase } from "@/integrations/supabase/client";
 import { useQuery } from "@tanstack/react-query";
+import { useIsMobile } from "@/hooks/use-mobile";
 
 interface ActivityLog {
   activity_name: string;
@@ -53,6 +53,7 @@ const icons = {
 export default function Activity() {
   const [selectedDate, setSelectedDate] = useState<Date | undefined>(undefined);
   const [dayActivities, setDayActivities] = useState<DayActivities | null>(null);
+  const isMobile = useIsMobile();
 
   const { data: activities } = useQuery({
     queryKey: ['activities'],
@@ -158,13 +159,14 @@ export default function Activity() {
     <div className="flex min-h-screen bg-gray-50/50 dark:bg-gray-900/50">
       <Sidebar />
       <main className="flex-1 ml-16 md:ml-64">
-        <div className="container py-8 max-w-4xl">
-          <div className="rounded-lg border bg-card p-6">
+        <div className="container py-4 md:py-8 px-2 md:px-8 max-w-6xl mx-auto">
+          <div className="rounded-lg border bg-card p-2 md:p-6">
             <Calendar
               mode="single"
               selected={selectedDate}
               onSelect={handleDayClick}
               className="w-full"
+              disabled={{ after: new Date() }}
               modifiers={{
                 hasActivity: (date) => {
                   const dayData = getDayActivities(date);
@@ -178,6 +180,13 @@ export default function Activity() {
                   backgroundColor: "rgb(var(--primary) / 0.1)",
                   color: "rgb(var(--primary))",
                 },
+              }}
+              styles={{
+                month: { width: '100%' },
+                table: { width: '100%' },
+                head_cell: { width: isMobile ? '2.5rem' : '4rem', fontSize: isMobile ? '0.75rem' : '0.875rem' },
+                cell: { width: isMobile ? '2.5rem' : '4rem', height: isMobile ? '2.5rem' : '4rem' },
+                day: { width: isMobile ? '2.5rem' : '4rem', height: isMobile ? '2.5rem' : '4rem' },
               }}
             />
           </div>
