@@ -1,7 +1,8 @@
+
 import { useEffect, useState } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { Target, CheckCircle2 } from "lucide-react";
+import { Target, CheckCircle2, RefreshCcw } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { Quest, UserQuest } from "@/types/quest";
 import { toast } from "sonner";
@@ -21,19 +22,15 @@ export function QuestsWidget() {
 
   useEffect(() => {
     if (quests.length > 0) {
-      if (activeQuestType === 'daily') {
-        selectRandomQuests();
-      } else {
-        setAvailableQuests(quests.filter(quest => quest.quest_type === activeQuestType));
-      }
+      selectRandomQuests();
     }
   }, [quests, completedQuests, activeQuestType]);
 
   const selectRandomQuests = () => {
-    const incompleteQuests = quests.filter(
-      quest => quest.quest_type === 'daily' && !isQuestCompleted(quest.id)
+    const typeQuests = quests.filter(
+      quest => quest.quest_type === activeQuestType && !isQuestCompleted(quest.id)
     );
-    const shuffled = [...incompleteQuests].sort(() => 0.5 - Math.random());
+    const shuffled = [...typeQuests].sort(() => 0.5 - Math.random());
     setAvailableQuests(shuffled.slice(0, 3));
   };
 
@@ -178,10 +175,21 @@ export function QuestsWidget() {
   return (
     <Card className="h-full">
       <CardHeader>
-        <CardTitle className="text-sm font-medium flex items-center gap-2">
-          <Target className="h-4 w-4" />
-          Quests
-        </CardTitle>
+        <div className="flex items-center justify-between">
+          <CardTitle className="text-sm font-medium flex items-center gap-2">
+            <Target className="h-4 w-4" />
+            Quests
+          </CardTitle>
+          <Button
+            variant="ghost"
+            size="icon"
+            onClick={selectRandomQuests}
+            className="h-8 w-8"
+          >
+            <RefreshCcw className="h-4 w-4" />
+            <span className="sr-only">Refresh Quests</span>
+          </Button>
+        </div>
         <div className="flex gap-2 mt-2">
           {(['daily', 'weekly', 'legacy'] as const).map((type) => (
             <Button
