@@ -6,7 +6,7 @@ import { useNavigate, useLocation } from "react-router-dom";
 const menuItems = [
   { icon: LayoutDashboard, label: "Dashboard", path: "/dashboard" },
   { icon: Target, label: "Quests", path: "/quests" },
-  { icon: LineChart, label: "Activity Log", path: "/activity" },
+  { icon: LineChart, label: "Activity", path: "/activity" },
   { icon: Settings, label: "Settings", path: "/settings" },
 ];
 
