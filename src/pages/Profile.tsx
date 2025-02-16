@@ -3,7 +3,6 @@ import { Sidebar } from "@/components/Sidebar";
 import { useState, useEffect } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
-import { SkillTreeProgress } from "@/components/SkillTreeProgress";
 import { MilestoneLevel } from "@/components/MilestoneLevel";
 import { useQuery } from "@tanstack/react-query";
 
@@ -142,31 +141,24 @@ export default function Profile() {
       <Sidebar />
       <main className="flex-1 ml-16 md:ml-64">
         <div className="container py-8">
-          <div className="space-y-6">
-            <div className="rounded-lg border bg-card p-6">
-              <div className="flex justify-between items-start">
-                <div>
-                  <h1 className="text-2xl font-bold mb-4">{profile.username}</h1>
-                  <div className="space-y-2">
-                    <p className="text-muted-foreground">Level {profile.level}</p>
-                    <p className="text-muted-foreground">Total XP: {profile.xp_total}</p>
-                    <p className="text-muted-foreground">{profile.email}</p>
-                  </div>
+          <div className="rounded-lg border bg-card p-6">
+            <div className="flex justify-between items-start">
+              <div>
+                <h1 className="text-2xl font-bold mb-4">{profile.username}</h1>
+                <div className="space-y-2">
+                  <p className="text-muted-foreground">Level {profile.level}</p>
+                  <p className="text-muted-foreground">Total XP: {profile.xp_total}</p>
+                  <p className="text-muted-foreground">{profile.email}</p>
                 </div>
-                {skillLevels && profile.milestone_level && (
-                  <div className="w-72">
-                    <MilestoneLevel 
-                      milestone={profile.milestone_level} 
-                      skillLevels={skillLevels}
-                    />
-                  </div>
-                )}
               </div>
-            </div>
-
-            <div className="rounded-lg border bg-card p-6">
-              <h2 className="text-xl font-semibold mb-4">Skill Progress</h2>
-              <SkillTreeProgress />
+              {skillLevels && profile.milestone_level && (
+                <div className="w-72">
+                  <MilestoneLevel 
+                    milestone={profile.milestone_level} 
+                    skillLevels={skillLevels}
+                  />
+                </div>
+              )}
             </div>
           </div>
         </div>

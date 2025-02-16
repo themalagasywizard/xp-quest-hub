@@ -96,8 +96,11 @@ export function MilestoneLevel({
               </TooltipTrigger>
               <TooltipContent>
                 <div className="space-y-2">
-                  <p className="text-sm font-medium">Overall level: {nextMilestone[1].level}</p>
-                  <p className="text-sm">Min skill requirement: {nextMilestone[1].requirement}</p>
+                  <p className="text-sm font-medium mb-2">Next milestone requirements:</p>
+                  <ul className="space-y-1">
+                    <li className="text-sm">- Overall level: {nextMilestone[1].level}</li>
+                    <li className="text-sm">- Min skill requirement: {nextMilestone[1].requirement}</li>
+                  </ul>
                 </div>
               </TooltipContent>
             </Tooltip>
