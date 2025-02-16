@@ -55,7 +55,7 @@ export default function Dashboard() {
 
       const { data, error } = await supabase
         .from('profiles')
-        .select('username, xp_total, level, streak_count, profile_picture')
+        .select('username, xp_total, level, streak_count, profile_picture, milestone_level')
         .eq('id', session.user.id)
         .single();
 

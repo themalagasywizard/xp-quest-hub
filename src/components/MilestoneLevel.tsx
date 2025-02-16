@@ -43,9 +43,11 @@ const MILESTONE_TEXT = {
 };
 
 export function MilestoneLevel({ milestone, skillLevels }: MilestoneLevelProps) {
+  if (!milestone || !skillLevels) return null;
+
   const currentRequirement = MILESTONE_REQUIREMENTS[milestone];
   const nextMilestone = Object.entries(MILESTONE_REQUIREMENTS).find(
-    ([key, value]) => value.level > currentRequirement.level
+    ([, value]) => value.level > currentRequirement.level
   );
 
   const getNextRequiredLevels = () => {
@@ -97,7 +99,9 @@ export function MilestoneLevel({ milestone, skillLevels }: MilestoneLevelProps) 
               <Progress
                 value={skill.progress}
                 className="h-1"
-                indicatorClassName={`bg-[${skill.color}]`}
+                style={{ 
+                  ['--progress-background' as string]: skill.color 
+                }}
               />
             </div>
           ))}
