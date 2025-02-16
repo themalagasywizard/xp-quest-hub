@@ -3,9 +3,6 @@ import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
 import { Star } from "lucide-react";
 import { Link } from "react-router-dom";
-import { MilestoneLevel } from "./MilestoneLevel";
-import { useQuery } from "@tanstack/react-query";
-import { supabase } from "@/integrations/supabase/client";
 
 interface DashboardHeaderProps {
   username: string;
@@ -19,36 +16,8 @@ export function DashboardHeader({
   username, 
   level, 
   xpTotal, 
-  profilePicture,
-  milestone 
+  profilePicture
 }: DashboardHeaderProps) {
-  const { data: skillLevels } = useQuery({
-    queryKey: ['skill-levels'],
-    queryFn: async () => {
-      const { data: { user } } = await supabase.auth.getUser();
-      if (!user) throw new Error("Not authenticated");
-
-      const { data: skills, error } = await supabase
-        .from('user_skills')
-        .select(`
-          level,
-          skill_trees (
-            name,
-            color
-          )
-        `)
-        .eq('user_id', user.id);
-
-      if (error) throw error;
-
-      return skills.map(skill => ({
-        name: skill.skill_trees.name,
-        level: skill.level || 1,
-        color: skill.skill_trees.color,
-      }));
-    }
-  });
-
   return (
     <div className="flex items-center justify-between p-6 mb-6 bg-white/50 dark:bg-gray-800/50 backdrop-blur-xl rounded-xl border border-gray-200/50 dark:border-gray-700/50 shadow-sm">
       <div className="flex items-start gap-4">
@@ -60,12 +29,9 @@ export function DashboardHeader({
             </AvatarFallback>
           </Avatar>
         </Link>
-        <div className="space-y-4">
-          <div className="space-y-1">
-            <h2 className="text-xl font-semibold text-gray-900 dark:text-gray-100">{username}</h2>
-            <span className="text-sm text-gray-500 dark:text-gray-400">Level {level}</span>
-          </div>
-          {skillLevels && <MilestoneLevel milestone={milestone} skillLevels={skillLevels} />}
+        <div className="space-y-1">
+          <h2 className="text-xl font-semibold text-gray-900 dark:text-gray-100">{username}</h2>
+          <span className="text-sm text-gray-500 dark:text-gray-400">Level {level}</span>
         </div>
       </div>
       <Badge 

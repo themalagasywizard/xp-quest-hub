@@ -95,13 +95,9 @@ export function MilestoneLevel({
                 <Lock className="h-4 w-4 text-muted-foreground" />
               </TooltipTrigger>
               <TooltipContent>
-                <p className="font-medium mb-2">Next milestone requirements:</p>
-                <div className="space-y-1.5">
-                  {requirementsProgress.map(skill => (
-                    <p key={skill.name} className="text-sm">
-                      {skill.name}: Level {skill.level}/{skill.required}
-                    </p>
-                  ))}
+                <div className="space-y-2">
+                  <p className="text-sm font-medium">Overall level: {nextMilestone[1].level}</p>
+                  <p className="text-sm">Min skill requirement: {nextMilestone[1].requirement}</p>
                 </div>
               </TooltipContent>
             </Tooltip>
