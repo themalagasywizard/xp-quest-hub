@@ -72,6 +72,7 @@ export function SkillTreeProgress() {
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) return;
 
+      // Get all skills data
       const { data: skillsData, error: skillsError } = await supabase
         .from('skill_trees')
         .select('*')
@@ -79,6 +80,7 @@ export function SkillTreeProgress() {
 
       if (skillsError) throw skillsError;
 
+      // Get activity logs for the user
       const { data: logs, error: logsError } = await supabase
         .from('activity_log')
         .select('skill_id, xp_awarded')
@@ -86,16 +88,25 @@ export function SkillTreeProgress() {
 
       if (logsError) throw logsError;
 
+      // Process each skill
       const formattedSkills = skillsData.map(skill => {
-        // Filter and sum XP for this skill
-        const totalXP = logs
-          ?.filter(log => log.skill_id === skill.id)
-          .reduce((sum, log) => sum + (log.xp_awarded || 0), 0) || 0;
-
+        // Get all activity logs for this skill
+        const skillLogs = logs?.filter(log => log.skill_id === skill.id) || [];
+        
+        // Sum up all XP for this skill
+        const totalXP = skillLogs.reduce((sum, log) => sum + (log.xp_awarded || 0), 0);
+        
         // Calculate level based on total XP
         const level = calculateLevel(totalXP);
 
-        console.log(`Skill: ${skill.name}, XP: ${totalXP}, Level: ${level}`);
+        // Debug logging
+        console.log(`Skill: ${skill.name}`);
+        console.log(`- Skill ID: ${skill.id}`);
+        console.log(`- Total XP: ${totalXP}`);
+        console.log(`- Level: ${level}`);
+        console.log(`- Number of logs: ${skillLogs.length}`);
+        console.log(`- Individual XP values:`, skillLogs.map(log => log.xp_awarded));
+        console.log('---');
 
         return {
           skill_id: skill.id,
