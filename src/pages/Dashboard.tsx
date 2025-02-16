@@ -2,6 +2,7 @@
 import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
+import { Button } from "@/components/ui/button";
 import { toast } from "sonner";
 import { DashboardHeader } from "@/components/DashboardHeader";
 import { SkillTreeProgress } from "@/components/SkillTreeProgress";
@@ -25,6 +26,7 @@ export default function Dashboard() {
   useEffect(() => {
     getProfile();
     
+    // Listen for XP updates
     const handleXpUpdate = () => {
       getProfile();
     };
@@ -73,7 +75,7 @@ export default function Dashboard() {
   if (!profile) return null;
 
   return (
-    <div className="flex min-h-screen bg-gray-50/50 dark:bg-gray-900/50">
+    <div className="flex min-h-screen bg-background">
       <Sidebar />
       <main className="flex-1 ml-16 md:ml-64">
         <div className="container py-8 max-w-6xl">
@@ -86,8 +88,8 @@ export default function Dashboard() {
           
           <div className="grid gap-6 md:grid-cols-12">
             <div className="md:col-span-8 space-y-6">
-              <div className="p-6 rounded-xl bg-white/50 dark:bg-gray-800/50 backdrop-blur-xl border border-gray-200/50 dark:border-gray-700/50 shadow-sm">
-                <h3 className="text-lg font-medium mb-4 text-gray-900 dark:text-gray-100">Skill Tree Progress</h3>
+              <div className="p-6 rounded-lg bg-card border border-border">
+                <h3 className="text-lg font-semibold mb-4">Skill Tree Progress</h3>
                 <SkillTreeProgress />
               </div>
               
@@ -97,7 +99,7 @@ export default function Dashboard() {
               </div>
             </div>
             
-            <div className="md:col-span-4 space-y-6">
+            <div className="md:col-span-4">
               {/* Additional widgets can be added here */}
             </div>
           </div>
