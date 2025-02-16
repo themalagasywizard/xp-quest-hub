@@ -12,7 +12,7 @@ import { format, formatDistanceToNow } from "date-fns";
 
 export default function Quests() {
   const [quests, setQuests] = useState<Quest[]>([]);
-  const [completedQuests, setCompletedQuests] = useState<(UserQuest & { reset_time: string })[]>([]);
+  const [completedQuests, setCompletedQuests] = useState<UserQuest[]>([]);
   const [loading, setLoading] = useState(true);
   const [now, setNow] = useState(new Date());
 
@@ -87,50 +87,56 @@ export default function Quests() {
     const { data: { user } } = await supabase.auth.getUser();
     if (!user) return;
 
-    const { data, error } = await supabase
-      .from('user_quests')
-      .insert([
-        {
-          user_id: user.id,
-          quest_id: quest.id,
+    try {
+      const { data, error } = await supabase
+        .from('user_quests')
+        .insert([
+          {
+            user_id: user.id,
+            quest_id: quest.id,
+          }
+        ])
+        .select()
+        .single();
+
+      if (error) {
+        if (error.code === '23505') {
+          toast.error("You've already completed this quest!");
+          await fetchCompletedQuests();
+        } else {
+          toast.error("Failed to complete quest");
         }
-      ])
-      .select()
-      .single();
-
-    if (error) {
-      if (error.code === '23505') {
-        toast.error("You've already completed this quest!");
-      } else {
-        toast.error("Failed to complete quest");
+        return;
       }
-      return;
-    }
 
-    const { error: distributeError } = await supabase.rpc(
-      'distribute_quest_xp',
-      {
-        p_user_id: user.id,
-        p_quest_id: quest.id
+      const { error: distributeError } = await supabase.rpc(
+        'distribute_quest_xp',
+        {
+          p_user_id: user.id,
+          p_quest_id: quest.id
+        }
+      );
+
+      if (distributeError) {
+        toast.error("Failed to award XP");
+        return;
       }
-    );
 
-    if (distributeError) {
-      toast.error("Failed to award XP");
-      return;
+      toast.success(`Quest completed! XP distributed to relevant skills`);
+      setCompletedQuests([...completedQuests, data]);
+      window.dispatchEvent(new CustomEvent('xp-updated'));
+    } catch (err) {
+      console.error("Quest completion error:", err);
+      toast.error("An unexpected error occurred");
     }
-
-    toast.success(`Quest completed! XP distributed to relevant skills`);
-    setCompletedQuests([...completedQuests, data]);
-    window.dispatchEvent(new CustomEvent('xp-updated'));
   };
 
-  const isQuestAvailable = (questId: string) => {
+  const isQuestCompleted = (questId: string) => {
     const completedQuest = completedQuests.find(cq => cq.quest_id === questId);
-    if (!completedQuest) return true;
+    if (!completedQuest) return false;
 
     const resetTime = new Date(completedQuest.reset_time);
-    return now >= resetTime;
+    return now < resetTime;
   };
 
   const getResetTimeDisplay = (questId: string) => {
@@ -147,19 +153,19 @@ export default function Quests() {
     return quests
       .filter(quest => quest.quest_type === questType)
       .map((quest) => {
-        const completed = !isQuestAvailable(quest.id);
+        const completed = isQuestCompleted(quest.id);
         const resetTimeDisplay = getResetTimeDisplay(quest.id);
 
         return (
           <div
             key={quest.id}
-            className="flex items-center justify-between p-4 rounded-lg border bg-card"
+            className="flex items-start justify-between p-4 rounded-lg border bg-card"
           >
             <div className="space-y-1">
               <h4 className="text-sm font-medium">{quest.title}</h4>
               <p className="text-sm text-muted-foreground">{quest.description}</p>
               {quest.skills && quest.skills.length > 0 && (
-                <div className="flex items-center gap-2 mt-2">
+                <div className="flex flex-wrap gap-2 mt-2">
                   {quest.skills.map((skill) => (
                     <div
                       key={skill.skill_id}
@@ -178,7 +184,7 @@ export default function Quests() {
                 <p className="text-xs text-muted-foreground mt-2">{resetTimeDisplay}</p>
               )}
             </div>
-            <div className="flex items-center gap-4">
+            <div className="flex items-center gap-4 shrink-0">
               <span className="text-sm font-medium">+{quest.xp_reward} XP</span>
               {completed ? (
                 <CheckCircle2 className="h-5 w-5 text-green-500" />
