@@ -27,6 +27,50 @@ import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Camera } from "lucide-react";
 import { Sidebar } from "@/components/Sidebar";
 
+// Common timezone list
+const TIMEZONES = [
+  "Africa/Cairo",
+  "Africa/Johannesburg",
+  "Africa/Lagos",
+  "Africa/Nairobi",
+  "America/Anchorage",
+  "America/Bogota",
+  "America/Chicago",
+  "America/Denver",
+  "America/Los_Angeles",
+  "America/Mexico_City",
+  "America/New_York",
+  "America/Phoenix",
+  "America/Santiago",
+  "America/Sao_Paulo",
+  "America/Toronto",
+  "Asia/Bangkok",
+  "Asia/Dubai",
+  "Asia/Hong_Kong",
+  "Asia/Jakarta",
+  "Asia/Jerusalem",
+  "Asia/Kolkata",
+  "Asia/Manila",
+  "Asia/Seoul",
+  "Asia/Shanghai",
+  "Asia/Singapore",
+  "Asia/Tokyo",
+  "Australia/Melbourne",
+  "Australia/Perth",
+  "Australia/Sydney",
+  "Europe/Amsterdam",
+  "Europe/Berlin",
+  "Europe/Istanbul",
+  "Europe/London",
+  "Europe/Madrid",
+  "Europe/Moscow",
+  "Europe/Paris",
+  "Europe/Rome",
+  "Pacific/Auckland",
+  "Pacific/Honolulu",
+  "UTC"
+];
+
 const formSchema = z.object({
   username: z.string().min(2, {
     message: "Username must be at least 2 characters.",
@@ -207,7 +251,7 @@ export default function Profile() {
                             </SelectTrigger>
                           </FormControl>
                           <SelectContent>
-                            {Intl.supportedValuesOf('timeZone').map((tz) => (
+                            {TIMEZONES.map((tz) => (
                               <SelectItem key={tz} value={tz}>
                                 {tz}
                               </SelectItem>
