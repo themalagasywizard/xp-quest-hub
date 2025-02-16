@@ -14,6 +14,7 @@ import NotFound from "@/pages/NotFound";
 import { Toaster } from "@/components/ui/toaster";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import Activity from "@/pages/Activity";
+import Profile from "@/pages/Profile";
 
 const queryClient = new QueryClient();
 
@@ -28,6 +29,7 @@ export default function App() {
             <Route path="/quests" element={<Quests />} />
             <Route path="/activity" element={<Activity />} />
             <Route path="/settings" element={<Settings />} />
+            <Route path="/profile" element={<Profile />} />
             <Route path="/auth" element={<Auth />} />
             <Route path="*" element={<NotFound />} />
           </Routes>
