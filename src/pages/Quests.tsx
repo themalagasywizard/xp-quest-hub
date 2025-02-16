@@ -1,4 +1,3 @@
-
 import { useEffect, useState } from "react";
 import { Target } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
@@ -8,16 +7,26 @@ import { Sidebar } from "@/components/Sidebar";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { formatDistanceToNow } from "date-fns";
 import { QuestList } from "@/components/quest/QuestList";
+import { Badge } from "@/components/ui/badge";
+
+interface SkillFilter {
+  id: string;
+  name: string;
+  color: string;
+}
 
 export default function Quests() {
   const [quests, setQuests] = useState<Quest[]>([]);
   const [completedQuests, setCompletedQuests] = useState<UserQuest[]>([]);
   const [loading, setLoading] = useState(true);
   const [now, setNow] = useState(new Date());
+  const [skills, setSkills] = useState<SkillFilter[]>([]);
+  const [selectedSkill, setSelectedSkill] = useState<string | null>(null);
 
   useEffect(() => {
     fetchQuests();
     fetchCompletedQuests();
+    fetchSkills();
 
     // Update timer every minute
     const interval = setInterval(() => {
@@ -26,6 +35,20 @@ export default function Quests() {
 
     return () => clearInterval(interval);
   }, []);
+
+  const fetchSkills = async () => {
+    const { data, error } = await supabase
+      .from('skill_trees')
+      .select('id, name, color')
+      .order('name');
+
+    if (error) {
+      toast.error("Failed to fetch skills");
+      return;
+    }
+
+    setSkills(data);
+  };
 
   const fetchQuests = async () => {
     const { data, error } = await supabase
@@ -148,6 +171,13 @@ export default function Quests() {
     return `Resets ${formatDistanceToNow(resetTime, { addSuffix: true })}`;
   };
 
+  const filterQuestsBySkill = (quests: Quest[], skillId: string | null) => {
+    if (!skillId) return quests;
+    return quests.filter(quest => 
+      quest.skills?.some(skill => skill.skill_id === skillId)
+    );
+  };
+
   if (loading) {
     return (
       <div className="flex min-h-screen bg-gray-50/50 dark:bg-gray-900/50">
@@ -175,6 +205,31 @@ export default function Quests() {
             <h1 className="text-2xl font-bold">Quests</h1>
           </div>
           
+          <div className="mb-6 flex flex-wrap gap-2">
+            <Badge
+              variant={selectedSkill === null ? "default" : "secondary"}
+              className="cursor-pointer"
+              onClick={() => setSelectedSkill(null)}
+            >
+              All Skills
+            </Badge>
+            {skills.map((skill) => (
+              <Badge
+                key={skill.id}
+                variant={selectedSkill === skill.id ? "default" : "secondary"}
+                className="cursor-pointer"
+                style={{
+                  backgroundColor: selectedSkill === skill.id ? skill.color : undefined,
+                  color: selectedSkill === skill.id ? 'white' : skill.color,
+                  borderColor: skill.color
+                }}
+                onClick={() => setSelectedSkill(skill.id)}
+              >
+                {skill.name}
+              </Badge>
+            ))}
+          </div>
+          
           <Tabs defaultValue="daily" className="w-full">
             <TabsList>
               <TabsTrigger value="daily">Daily</TabsTrigger>
@@ -183,7 +238,7 @@ export default function Quests() {
             </TabsList>
             <TabsContent value="daily" className="mt-4">
               <QuestList
-                quests={quests}
+                quests={filterQuestsBySkill(quests, selectedSkill)}
                 questType="daily"
                 isQuestCompleted={isQuestCompleted}
                 getResetTimeDisplay={getResetTimeDisplay}
@@ -192,7 +247,7 @@ export default function Quests() {
             </TabsContent>
             <TabsContent value="weekly" className="mt-4">
               <QuestList
-                quests={quests}
+                quests={filterQuestsBySkill(quests, selectedSkill)}
                 questType="weekly"
                 isQuestCompleted={isQuestCompleted}
                 getResetTimeDisplay={getResetTimeDisplay}
@@ -201,7 +256,7 @@ export default function Quests() {
             </TabsContent>
             <TabsContent value="legacy" className="mt-4">
               <QuestList
-                quests={quests}
+                quests={filterQuestsBySkill(quests, selectedSkill)}
                 questType="legacy"
                 isQuestCompleted={isQuestCompleted}
                 getResetTimeDisplay={getResetTimeDisplay}
