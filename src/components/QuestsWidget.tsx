@@ -141,7 +141,7 @@ export function QuestsWidget() {
 
   if (loading) {
     return (
-      <Card>
+      <Card className="h-full">
         <CardHeader>
           <CardTitle className="text-sm font-medium flex items-center gap-2">
             <Target className="h-4 w-4" />
@@ -160,7 +160,7 @@ export function QuestsWidget() {
   }
 
   return (
-    <Card>
+    <Card className="h-full">
       <CardHeader>
         <CardTitle className="text-sm font-medium flex items-center gap-2">
           <Target className="h-4 w-4" />
@@ -173,22 +173,22 @@ export function QuestsWidget() {
           return (
             <div
               key={quest.id}
-              className="flex flex-col gap-3 p-4 rounded-lg border bg-card"
+              className="flex flex-col gap-2 p-4 rounded-lg border bg-card"
             >
-              <div className="flex items-start justify-between gap-4">
-                <div className="space-y-1 min-w-0">
-                  <h4 className="text-sm font-medium">{quest.title}</h4>
-                  <p className="text-sm text-muted-foreground">{quest.description}</p>
+              <div className="flex items-start justify-between gap-3">
+                <div className="flex-1 min-w-0">
+                  <h4 className="text-sm font-medium leading-none mb-1.5">{quest.title}</h4>
+                  <p className="text-sm text-muted-foreground leading-normal">{quest.description}</p>
                 </div>
-                <div className="flex items-center gap-2 shrink-0">
+                <div className="flex flex-col items-end gap-2 shrink-0">
                   <span className="text-sm font-medium whitespace-nowrap">+{quest.xp_reward} XP</span>
                   {completed ? (
-                    <CheckCircle2 className="h-5 w-5 text-green-500 shrink-0" />
+                    <CheckCircle2 className="h-5 w-5 text-green-500" />
                   ) : (
                     <Button
                       size="sm"
+                      variant="default"
                       onClick={() => completeQuest(quest)}
-                      className="shrink-0"
                     >
                       Complete
                     </Button>
@@ -196,11 +196,11 @@ export function QuestsWidget() {
                 </div>
               </div>
               {quest.skills && quest.skills.length > 0 && (
-                <div className="flex flex-wrap items-center gap-2">
+                <div className="flex flex-wrap items-center gap-1.5 mt-1">
                   {quest.skills.map((skill) => (
                     <div
                       key={skill.skill_id}
-                      className="flex items-center gap-1 text-xs px-2 py-1 rounded-full"
+                      className="flex items-center gap-1 text-xs px-2 py-0.5 rounded-full"
                       style={{ backgroundColor: `${skill.color}20`, color: skill.color }}
                     >
                       <span>{skill.skill_name}</span>
