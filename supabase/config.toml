@@ -1,1 +1,5 @@
+
 project_id = "jkwwpudpjxbtvsevzelw"
+
+[functions.strava]
+verify_jwt = true

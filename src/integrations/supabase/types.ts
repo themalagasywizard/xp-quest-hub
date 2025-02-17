@@ -242,6 +242,39 @@ export type Database = {
         }
         Relationships: []
       }
+      strava_accounts: {
+        Row: {
+          access_token: string
+          created_at: string | null
+          id: string
+          refresh_token: string
+          strava_athlete_id: number
+          token_expires_at: string
+          updated_at: string | null
+          user_id: string
+        }
+        Insert: {
+          access_token: string
+          created_at?: string | null
+          id?: string
+          refresh_token: string
+          strava_athlete_id: number
+          token_expires_at: string
+          updated_at?: string | null
+          user_id: string
+        }
+        Update: {
+          access_token?: string
+          created_at?: string | null
+          id?: string
+          refresh_token?: string
+          strava_athlete_id?: number
+          token_expires_at?: string
+          updated_at?: string | null
+          user_id?: string
+        }
+        Relationships: []
+      }
       user_quests: {
         Row: {
           completed_at: string
