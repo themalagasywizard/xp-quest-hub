@@ -47,24 +47,36 @@ export function QuestItem({
           text: `${currentProgress.total_activities}/${requiredActivities} activities`
         };
       case 'days_with_activity':
-        if (!currentProgress.first_activity_date || !currentProgress.last_activity_date) {
-          const requiredDays = quest.completion_requirement.required_days || 0;
+        const requiredDays = quest.completion_requirement.required_days || 0;
+        if (!currentProgress.first_activity_date) {
           return {
             current: 0,
             max: requiredDays,
-            text: "0/" + requiredDays + " days"
+            text: `0/${requiredDays} days`
           };
         }
+        
+        const firstDate = new Date(currentProgress.first_activity_date);
+        const lastDate = currentProgress.last_activity_date 
+          ? new Date(currentProgress.last_activity_date)
+          : firstDate;
+        
         const daysPassed = Math.floor(
-          (new Date(currentProgress.last_activity_date).getTime() - 
-           new Date(currentProgress.first_activity_date).getTime()) / 
+          (lastDate.getTime() - firstDate.getTime()) / 
           (1000 * 60 * 60 * 24)
-        );
-        const requiredDays = quest.completion_requirement.required_days || 0;
+        ) + 1; // Add 1 to include both first and last day
+        
         return {
-          current: daysPassed,
+          current: Math.min(daysPassed, requiredDays),
           max: requiredDays,
           text: `${daysPassed}/${requiredDays} days`
+        };
+      case 'strava_distance':
+        const requiredDistance = quest.completion_requirement.required_distance || 0;
+        return {
+          current: 0,
+          max: requiredDistance,
+          text: `Complete a ${requiredDistance}km run`
         };
       default:
         return null;
@@ -72,6 +84,7 @@ export function QuestItem({
   };
 
   const progressInfo = getProgressDisplay();
+  const isAutoComplete = !!quest.completion_type;
 
   return (
     <div className="flex flex-col gap-2 p-4 rounded-lg border bg-card">
@@ -89,7 +102,7 @@ export function QuestItem({
               size="sm"
               variant="default"
               onClick={() => onComplete(quest)}
-              disabled={!!quest.completion_type} // Disable manual completion for auto-complete quests
+              disabled={isAutoComplete} // Disable button for auto-complete quests
             >
               Complete
             </Button>

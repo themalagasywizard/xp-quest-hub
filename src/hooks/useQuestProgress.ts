@@ -39,16 +39,6 @@ export function useQuestProgress() {
     const { data: { user } } = await supabase.auth.getUser();
     if (!user) return;
 
-    // First, let's log all activities for the fitness skill to debug
-    const { data: activities, error: activityError } = await supabase
-      .from('activity_log')
-      .select('*')
-      .eq('user_id', user.id)
-      .eq('skill_id', 'c8066fcd-13df-456f-9c7b-4e5368377827')
-      .order('created_at', { ascending: false });
-
-    console.log('Fitness activities:', activities);
-
     const { data, error } = await supabase
       .from('quest_progress')
       .select('*')
