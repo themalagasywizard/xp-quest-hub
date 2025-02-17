@@ -15,11 +15,29 @@ export default function Settings() {
   useEffect(() => {
     checkStravaConnection();
 
-    // Check for Strava connection success
-    if (searchParams.get('strava') === 'success') {
-      toast.success("Successfully connected to Strava!");
+    // Handle Strava OAuth callback
+    const code = searchParams.get('code');
+    if (code) {
+      handleStravaCallback(code);
     }
   }, [searchParams]);
+
+  const handleStravaCallback = async (code: string) => {
+    const { error } = await supabase.functions.invoke('strava', {
+      body: { 
+        action: 'handle_oauth',
+        code: code,
+      }
+    });
+
+    if (error) {
+      toast.error("Failed to connect Strava account");
+      return;
+    }
+
+    // Re-check connection status after callback
+    await checkStravaConnection();
+  };
 
   const checkStravaConnection = async () => {
     const { data: { session } } = await supabase.auth.getSession();
