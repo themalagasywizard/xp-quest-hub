@@ -81,9 +81,23 @@ export function useQuests() {
 
   const completeQuest = async (quest: Quest) => {
     const { data: { user } } = await supabase.auth.getUser();
-    if (!user) return;
+    if (!user) {
+      toast.error("You must be logged in to complete quests");
+      return;
+    }
 
     try {
+      // First check if the quest has already been completed and is still valid
+      const existingCompletion = completedQuests.find(cq => 
+        cq.quest_id === quest.id && now < new Date(cq.reset_time)
+      );
+
+      if (existingCompletion) {
+        toast.error("You've already completed this quest!");
+        return;
+      }
+
+      // Try to insert the completion
       const { data, error } = await supabase
         .from('user_quests')
         .insert([
@@ -96,15 +110,18 @@ export function useQuests() {
         .single();
 
       if (error) {
+        // If it's a duplicate error, refresh our completed quests and show message
         if (error.code === '23505') {
-          toast.error("You've already completed this quest!");
           await fetchCompletedQuests();
+          toast.error("You've already completed this quest!");
         } else {
+          console.error("Quest completion error:", error);
           toast.error("Failed to complete quest");
         }
         return;
       }
 
+      // If successful, distribute XP
       const { error: distributeError } = await supabase.rpc(
         'distribute_quest_xp',
         {
@@ -114,12 +131,13 @@ export function useQuests() {
       );
 
       if (distributeError) {
+        console.error("XP distribution error:", distributeError);
         toast.error("Failed to award XP");
         return;
       }
 
       toast.success(`Quest completed! XP distributed to relevant skills`);
-      setCompletedQuests([...completedQuests, data]);
+      setCompletedQuests(prev => [...prev, data]);
       window.dispatchEvent(new CustomEvent('xp-updated'));
     } catch (err) {
       console.error("Quest completion error:", err);
