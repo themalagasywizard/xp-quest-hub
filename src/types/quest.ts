@@ -6,11 +6,12 @@ export interface Quest {
   xp_reward: number;
   quest_type: 'daily' | 'weekly' | 'legacy';
   created_at: string;
-  completion_type?: 'daily_streak' | 'total_activities' | 'days_with_activity';
+  completion_type?: 'daily_streak' | 'total_activities' | 'days_with_activity' | 'strava_distance';
   completion_requirement?: {
     required_streak?: number;
     required_activities?: number;
     required_days?: number;
+    required_distance?: number;
   };
   parent_quest_id?: string;
   skills?: {
