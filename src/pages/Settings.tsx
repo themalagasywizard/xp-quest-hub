@@ -44,7 +44,7 @@ export default function Settings() {
     }
 
     const clientId = functionData.clientId;
-    // Update the redirect URI to use the correct Supabase Edge Function URL format
+    // Use a URL without slashes that Strava will accept
     const redirectUri = `${window.location.origin}/functions/v1/strava`;
     const scope = "activity:read_all";
     
