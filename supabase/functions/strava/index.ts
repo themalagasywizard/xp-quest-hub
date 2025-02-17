@@ -7,6 +7,12 @@ const corsHeaders = {
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
 }
 
+interface StravaActivity {
+  id: number
+  type: string
+  distance: number
+}
+
 Deno.serve(async (req) => {
   // Handle CORS
   if (req.method === 'OPTIONS') {
@@ -14,7 +20,6 @@ Deno.serve(async (req) => {
   }
 
   try {
-    // Debug log the request details
     console.log('Request method:', req.method);
     console.log('Request headers:', Object.fromEntries(req.headers.entries()));
     
@@ -126,9 +131,7 @@ Deno.serve(async (req) => {
           }, {
             onConflict: 'user_id',
             ignoreDuplicates: false
-          })
-          .select()
-          .single();
+          });
 
         if (insertError) {
           console.error('Error storing tokens:', insertError);
@@ -140,6 +143,105 @@ Deno.serve(async (req) => {
       }
 
       console.log('Successfully stored Strava tokens');
+
+      // Fetch recent activities
+      console.log('Fetching recent activities');
+      const activitiesResponse = await fetch(
+        'https://www.strava.com/api/v3/athlete/activities',
+        {
+          headers: {
+            Authorization: `Bearer ${tokenData.access_token}`,
+          },
+        }
+      );
+
+      if (!activitiesResponse.ok) {
+        const errorText = await activitiesResponse.text();
+        console.error('Failed to fetch activities:', errorText);
+        throw new Error('Failed to fetch activities');
+      }
+
+      const activities: StravaActivity[] = await activitiesResponse.json();
+      console.log(`Found ${activities.length} recent activities`);
+
+      // Store activities and process for quest completion
+      for (const activity of activities) {
+        // Store activity
+        const { error: activityError } = await supabaseClient
+          .from('strava_activities')
+          .upsert({
+            user_id: user.id,
+            strava_id: activity.id,
+            activity_data: activity,
+          }, {
+            onConflict: 'strava_id',
+            ignoreDuplicates: false
+          });
+
+        if (activityError && activityError.code !== '23505') {
+          console.error('Error storing activity:', activityError);
+          continue;
+        }
+
+        // Check for distance-based quests
+        if (activity.type === 'Run') {
+          const distanceInKm = activity.distance / 1000; // Convert meters to kilometers
+          console.log(`Processing run activity with distance: ${distanceInKm}km`);
+
+          const { data: distanceQuests, error: questError } = await supabaseClient
+            .from('quests')
+            .select('*')
+            .eq('completion_type', 'strava_distance');
+
+          if (questError) {
+            console.error('Error fetching distance quests:', questError);
+            continue;
+          }
+
+          for (const quest of distanceQuests) {
+            const requiredDistance = quest.completion_requirement?.required_distance;
+            if (distanceInKm >= requiredDistance) {
+              console.log(`User completed distance quest: ${quest.title}`);
+              
+              // Check if quest already completed
+              const { data: existingCompletion } = await supabaseClient
+                .from('user_quests')
+                .select('*')
+                .eq('user_id', user.id)
+                .eq('quest_id', quest.id)
+                .maybeSingle();
+
+              if (!existingCompletion) {
+                // Complete the quest
+                const { error: completionError } = await supabaseClient
+                  .from('user_quests')
+                  .insert({
+                    user_id: user.id,
+                    quest_id: quest.id
+                  });
+
+                if (completionError) {
+                  console.error('Error completing quest:', completionError);
+                  continue;
+                }
+
+                // Distribute XP
+                const { error: xpError } = await supabaseClient.rpc(
+                  'distribute_quest_xp',
+                  {
+                    p_user_id: user.id,
+                    p_quest_id: quest.id
+                  }
+                );
+
+                if (xpError) {
+                  console.error('Error distributing XP:', xpError);
+                }
+              }
+            }
+          }
+        }
+      }
 
       return new Response(
         JSON.stringify({ success: true }),
