@@ -6,13 +6,20 @@ import { Button } from "@/components/ui/button";
 import { Link2 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
+import { useSearchParams } from "react-router-dom";
 
 export default function Settings() {
   const [isStravaConnected, setIsStravaConnected] = useState(false);
+  const [searchParams] = useSearchParams();
 
   useEffect(() => {
     checkStravaConnection();
-  }, []);
+
+    // Check for Strava connection success
+    if (searchParams.get('strava') === 'success') {
+      toast.success("Successfully connected to Strava!");
+    }
+  }, [searchParams]);
 
   const checkStravaConnection = async () => {
     const { data: { session } } = await supabase.auth.getSession();
@@ -37,7 +44,7 @@ export default function Settings() {
     }
 
     const clientId = functionData.clientId;
-    const redirectUri = `${window.location.origin}/api/strava?action=callback`;
+    const redirectUri = `${window.location.origin}/api/strava/callback`;
     const scope = "activity:read_all";
     
     const stravaAuthUrl = `https://www.strava.com/oauth/authorize?client_id=${clientId}&redirect_uri=${redirectUri}&response_type=code&scope=${scope}`;

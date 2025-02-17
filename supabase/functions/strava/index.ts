@@ -25,24 +25,16 @@ serve(async (req) => {
       { auth: { persistSession: false } }
     )
 
-    const { action } = await req.json()
-
-    // Handle getting client ID
-    if (action === 'get_client_id') {
-      if (!STRAVA_CLIENT_ID) {
-        throw new Error('Strava client ID not configured')
-      }
-
-      return new Response(
-        JSON.stringify({ clientId: STRAVA_CLIENT_ID }),
-        { headers: { ...corsHeaders, 'Content-Type': 'application/json' }}
-      )
-    }
-
-    // Handle OAuth callback from Strava
-    if (action === 'callback') {
+    // If it's a GET request, it might be the OAuth callback
+    if (req.method === 'GET') {
       const url = new URL(req.url)
       const code = url.searchParams.get('code')
+      const error = url.searchParams.get('error')
+
+      if (error) {
+        throw new Error(`Strava authorization error: ${error}`)
+      }
+
       if (!code) {
         throw new Error('No authorization code provided')
       }
@@ -60,6 +52,10 @@ serve(async (req) => {
       })
 
       const tokenData = await tokenResponse.json()
+
+      if (tokenData.errors) {
+        throw new Error(`Strava token exchange error: ${JSON.stringify(tokenData.errors)}`)
+      }
 
       // Get the user's ID from the auth header
       const authHeader = req.headers.get('Authorization')?.split('Bearer ')[1]
@@ -84,9 +80,29 @@ serve(async (req) => {
         throw dbError
       }
 
-      return new Response(JSON.stringify({ success: true }), {
-        headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+      // Redirect back to the settings page
+      return new Response(null, {
+        status: 302,
+        headers: {
+          ...corsHeaders,
+          'Location': '/settings?strava=success'
+        }
       })
+    }
+
+    // Handle POST requests (API actions)
+    const { action } = await req.json()
+
+    // Handle getting client ID
+    if (action === 'get_client_id') {
+      if (!STRAVA_CLIENT_ID) {
+        throw new Error('Strava client ID not configured')
+      }
+
+      return new Response(
+        JSON.stringify({ clientId: STRAVA_CLIENT_ID }),
+        { headers: { ...corsHeaders, 'Content-Type': 'application/json' }}
+      )
     }
 
     // Handle token refresh
