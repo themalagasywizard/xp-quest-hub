@@ -275,6 +275,30 @@ export type Database = {
         }
         Relationships: []
       }
+      strava_activities: {
+        Row: {
+          activity_data: Json
+          created_at: string | null
+          id: string
+          strava_id: number
+          user_id: string
+        }
+        Insert: {
+          activity_data: Json
+          created_at?: string | null
+          id?: string
+          strava_id: number
+          user_id: string
+        }
+        Update: {
+          activity_data?: Json
+          created_at?: string | null
+          id?: string
+          strava_id?: number
+          user_id?: string
+        }
+        Relationships: []
+      }
       user_quests: {
         Row: {
           completed_at: string
