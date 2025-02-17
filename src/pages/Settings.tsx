@@ -19,11 +19,13 @@ export default function Settings() {
     // Handle Strava OAuth callback
     const code = searchParams.get('code');
     if (code) {
+      console.log('Detected Strava callback code:', code);
       handleStravaCallback(code);
     }
   }, [searchParams]);
 
   const handleStravaCallback = async (code: string) => {
+    console.log('Processing Strava callback...');
     const { error } = await supabase.functions.invoke('strava', {
       body: { 
         action: 'handle_oauth',
@@ -37,6 +39,7 @@ export default function Settings() {
       return;
     }
 
+    console.log('Strava connection successful');
     toast.success("Successfully connected to Strava");
     // Re-check connection status after callback
     await checkStravaConnection();
@@ -57,6 +60,7 @@ export default function Settings() {
       return;
     }
 
+    console.log('Strava connection status:', !!data);
     setIsStravaConnected(!!data);
   };
 
@@ -72,8 +76,8 @@ export default function Settings() {
     }
 
     const clientId = functionData.clientId;
-    // Use the complete current URL path for the redirect
-    const redirectUri = `${window.location.origin}${location.pathname}`;
+    // Ensure we redirect back to the settings page
+    const redirectUri = `${window.location.origin}/settings`;
     const scope = "activity:read_all";
     
     const stravaAuthUrl = `https://www.strava.com/oauth/authorize?client_id=${clientId}&redirect_uri=${redirectUri}&response_type=code&scope=${scope}`;
