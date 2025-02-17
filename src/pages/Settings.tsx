@@ -6,11 +6,12 @@ import { Button } from "@/components/ui/button";
 import { Link2 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
-import { useSearchParams } from "react-router-dom";
+import { useSearchParams, useLocation } from "react-router-dom";
 
 export default function Settings() {
   const [isStravaConnected, setIsStravaConnected] = useState(false);
   const [searchParams] = useSearchParams();
+  const location = useLocation();
 
   useEffect(() => {
     checkStravaConnection();
@@ -31,10 +32,12 @@ export default function Settings() {
     });
 
     if (error) {
+      console.error('Strava connection error:', error);
       toast.error("Failed to connect Strava account");
       return;
     }
 
+    toast.success("Successfully connected to Strava");
     // Re-check connection status after callback
     await checkStravaConnection();
   };
@@ -43,11 +46,16 @@ export default function Settings() {
     const { data: { session } } = await supabase.auth.getSession();
     if (!session) return;
 
-    const { data } = await supabase
+    const { data, error } = await supabase
       .from('strava_accounts')
       .select('id')
       .eq('user_id', session.user.id)
       .maybeSingle();
+
+    if (error) {
+      console.error('Error checking Strava connection:', error);
+      return;
+    }
 
     setIsStravaConnected(!!data);
   };
@@ -58,17 +66,19 @@ export default function Settings() {
     });
 
     if (functionError) {
+      console.error('Failed to get Strava client ID:', functionError);
       toast.error("Failed to initiate Strava connection");
       return;
     }
 
     const clientId = functionData.clientId;
-    // Use the base domain for redirect (Strava doesn't like paths)
-    const redirectUri = `${window.location.protocol}//${window.location.host}`;
+    // Use the complete current URL path for the redirect
+    const redirectUri = `${window.location.origin}${location.pathname}`;
     const scope = "activity:read_all";
     
     const stravaAuthUrl = `https://www.strava.com/oauth/authorize?client_id=${clientId}&redirect_uri=${redirectUri}&response_type=code&scope=${scope}`;
     
+    console.log('Redirecting to Strava:', stravaAuthUrl);
     window.location.href = stravaAuthUrl;
   };
 
@@ -82,6 +92,7 @@ export default function Settings() {
       .eq('user_id', session.user.id);
 
     if (error) {
+      console.error('Error disconnecting Strava:', error);
       toast.error("Failed to disconnect Strava");
       return;
     }
