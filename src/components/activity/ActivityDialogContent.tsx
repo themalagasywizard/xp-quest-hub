@@ -2,6 +2,8 @@
 import { format } from "date-fns";
 import { Brain, Dumbbell, Palette } from "lucide-react";
 import { DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { ScrollArea } from "@/components/ui/scroll-area";
+import { useIsMobile } from "@/hooks/use-mobile";
 import { ActivityLog, CompletedQuest } from "./types";
 
 interface ActivityDialogContentProps {
@@ -25,64 +27,66 @@ const getActivityIcon = (skillInfo: { icon: string; color: string }) => {
 };
 
 export function ActivityDialogContent({ selectedDate, dayActivities }: ActivityDialogContentProps) {
+  const isMobile = useIsMobile();
   if (!selectedDate || !dayActivities) return null;
 
   return (
-    <DialogContent>
-      <DialogHeader>
+    <DialogContent className={isMobile ? "w-[calc(100%-32px)] h-[calc(100%-64px)] p-4" : ""}>
+      <DialogHeader className="space-y-2">
         <DialogTitle>
           {format(selectedDate, 'MMMM d, yyyy')}
         </DialogTitle>
-      </DialogHeader>
-
-      <div className="space-y-6">
         <div>
-          <h3 className="font-semibold">Total XP Earned</h3>
-          <p className="text-2xl font-bold text-primary">
+          <h3 className="text-sm font-semibold text-muted-foreground">Total XP Earned</h3>
+          <p className="text-xl font-bold text-primary">
             +{dayActivities.totalXP} XP
           </p>
         </div>
+      </DialogHeader>
 
-        {dayActivities.completedQuests.length > 0 && (
-          <div>
-            <h3 className="font-semibold mb-3">Completed Quests</h3>
-            <div className="space-y-2">
-              {dayActivities.completedQuests.map((quest, idx) => (
-                <div
-                  key={`quest-${idx}`}
-                  className="flex items-center justify-between p-3 rounded-lg border"
-                >
-                  <div className="flex items-center gap-3">
-                    {quest.quest.skills?.[0]?.skill && getActivityIcon(quest.quest.skills[0].skill)}
-                    <span>{quest.quest.title}</span>
+      <ScrollArea className={`${isMobile ? "h-[calc(100%-120px)]" : "max-h-[60vh]"} pr-4`}>
+        <div className="space-y-4">
+          {dayActivities.completedQuests.length > 0 && (
+            <div>
+              <h3 className="text-sm font-semibold mb-2">Completed Quests</h3>
+              <div className="space-y-2">
+                {dayActivities.completedQuests.map((quest, idx) => (
+                  <div
+                    key={`quest-${idx}`}
+                    className="flex items-center justify-between p-2.5 rounded-lg border text-sm"
+                  >
+                    <div className="flex items-center gap-2 min-w-0">
+                      {quest.quest.skills?.[0]?.skill && getActivityIcon(quest.quest.skills[0].skill)}
+                      <span className="truncate">{quest.quest.title}</span>
+                    </div>
+                    <span className="font-medium shrink-0 ml-2">+{quest.quest.xp_reward} XP</span>
                   </div>
-                  <span className="font-medium">+{quest.quest.xp_reward} XP</span>
-                </div>
-              ))}
+                ))}
+              </div>
             </div>
-          </div>
-        )}
+          )}
 
-        {dayActivities.activities.length > 0 && (
-          <div>
-            <h3 className="font-semibold mb-3">Activities</h3>
-            <div className="space-y-2">
-              {dayActivities.activities.map((activity, idx) => (
-                <div
-                  key={`activity-${idx}`}
-                  className="flex items-center justify-between p-3 rounded-lg border"
-                >
-                  <div className="flex items-center gap-3">
-                    {activity.skill && getActivityIcon(activity.skill)}
-                    <span>{activity.activity_name}</span>
+          {dayActivities.activities.length > 0 && (
+            <div>
+              <h3 className="text-sm font-semibold mb-2">Activities</h3>
+              <div className="space-y-2">
+                {dayActivities.activities.map((activity, idx) => (
+                  <div
+                    key={`activity-${idx}`}
+                    className="flex items-center justify-between p-2.5 rounded-lg border text-sm"
+                  >
+                    <div className="flex items-center gap-2 min-w-0">
+                      {activity.skill && getActivityIcon(activity.skill)}
+                      <span className="truncate">{activity.activity_name}</span>
+                    </div>
+                    <span className="font-medium shrink-0 ml-2">+{activity.xp_awarded} XP</span>
                   </div>
-                  <span className="font-medium">+{activity.xp_awarded} XP</span>
-                </div>
-              ))}
+                ))}
+              </div>
             </div>
-          </div>
-        )}
-      </div>
+          )}
+        </div>
+      </ScrollArea>
     </DialogContent>
   );
 }
