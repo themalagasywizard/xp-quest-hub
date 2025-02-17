@@ -57,32 +57,17 @@ export function DailyLog() {
       const today = new Date();
       today.setHours(0, 0, 0, 0);
 
-      // Get today's XP from activities
-      const { data: activityData, error: activityError } = await supabase
+      // Get today's XP for each skill
+      const { data, error } = await supabase
         .from('activity_log')
         .select('xp_awarded')
         .eq('user_id', user.id)
         .gte('created_at', today.toISOString());
 
-      if (activityError) throw activityError;
+      if (error) throw error;
 
-      // Get today's XP from completed quests
-      const { data: questData, error: questError } = await supabase
-        .from('user_quests')
-        .select(`
-          quest:quests (
-            xp_reward
-          )
-        `)
-        .eq('user_id', user.id)
-        .eq('completed_at', today.toISOString().split('T')[0]);
-
-      if (questError) throw questError;
-
-      const activityXP = activityData.reduce((sum, activity) => sum + activity.xp_awarded, 0);
-      const questXP = questData.reduce((sum, entry) => sum + entry.quest.xp_reward, 0);
-      
-      setTodayXP(activityXP + questXP);
+      const totalXP = data.reduce((sum, activity) => sum + activity.xp_awarded, 0);
+      setTodayXP(totalXP);
     } catch (error: any) {
       toast.error(error.message);
     }
@@ -136,7 +121,7 @@ export function DailyLog() {
       };
 
       // Update today's total XP
-      getTodayXP();
+      setTodayXP(prev => prev + activity.xp);
       toast.success(`Earned ${activity.xp} XP in ${selectedSkill}!`);
       
       if (result.leveled_up) {

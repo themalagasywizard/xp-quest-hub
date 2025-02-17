@@ -305,7 +305,6 @@ export type Database = {
           created_at: string
           id: string
           quest_id: string
-          quest_name: string | null
           reset_time: string | null
           user_id: string
         }
@@ -314,7 +313,6 @@ export type Database = {
           created_at?: string
           id?: string
           quest_id: string
-          quest_name?: string | null
           reset_time?: string | null
           user_id: string
         }
@@ -323,7 +321,6 @@ export type Database = {
           created_at?: string
           id?: string
           quest_id?: string
-          quest_name?: string | null
           reset_time?: string | null
           user_id?: string
         }
