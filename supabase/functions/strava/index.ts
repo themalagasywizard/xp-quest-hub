@@ -1,6 +1,12 @@
 
+// Import the createClient from Supabase
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2'
-import { corsHeaders } from '../_shared/cors.ts'
+
+// Define CORS headers directly in this file since it's small
+const corsHeaders = {
+  'Access-Control-Allow-Origin': '*',
+  'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
+}
 
 interface WebhookEvent {
   aspect_type: 'create' | 'update' | 'delete'
@@ -16,7 +22,6 @@ interface StravaActivity {
   id: number
   type: string
   distance: number
-  // Add other activity fields as needed
 }
 
 Deno.serve(async (req) => {
@@ -43,6 +48,8 @@ Deno.serve(async (req) => {
     }
 
     if (action === 'handle_oauth') {
+      console.log('Handling OAuth callback with code:', code)
+      
       const tokenResponse = await fetch('https://www.strava.com/oauth/token', {
         method: 'POST',
         headers: {
@@ -59,6 +66,7 @@ Deno.serve(async (req) => {
       const data = await tokenResponse.json()
 
       if (!tokenResponse.ok) {
+        console.error('Token exchange failed:', data)
         throw new Error('Failed to exchange authorization code')
       }
 
@@ -69,6 +77,8 @@ Deno.serve(async (req) => {
       
       const { data: { user }, error: userError } = await supabaseClient.auth.getUser(token)
       if (userError) throw userError
+
+      console.log('Storing tokens for user:', user.id)
 
       // Store the tokens
       const { error: insertError } = await supabaseClient
@@ -84,6 +94,7 @@ Deno.serve(async (req) => {
       if (insertError) throw insertError
 
       // Fetch recent activities
+      console.log('Fetching recent activities')
       const activitiesResponse = await fetch(
         'https://www.strava.com/api/v3/athlete/activities',
         {
@@ -94,10 +105,12 @@ Deno.serve(async (req) => {
       )
 
       if (!activitiesResponse.ok) {
+        console.error('Failed to fetch activities:', await activitiesResponse.text())
         throw new Error('Failed to fetch activities')
       }
 
       const activities: StravaActivity[] = await activitiesResponse.json()
+      console.log(`Found ${activities.length} recent activities`)
 
       // Store activities in our database
       for (const activity of activities) {
@@ -123,6 +136,7 @@ Deno.serve(async (req) => {
     if (req.method === 'POST' && !action) {
       // Handle webhook events
       const event: WebhookEvent = await req.json()
+      console.log('Received webhook event:', event)
       
       if (event.object_type === 'activity' && event.aspect_type === 'create') {
         // Get the Strava account associated with this athlete
@@ -147,10 +161,12 @@ Deno.serve(async (req) => {
         )
 
         if (!activityResponse.ok) {
+          console.error('Failed to fetch activity details:', await activityResponse.text())
           throw new Error('Failed to fetch activity details')
         }
 
         const activity: StravaActivity = await activityResponse.json()
+        console.log('Fetched activity details:', activity)
 
         // Store activity in our database
         const { error: activityError } = await supabaseClient
