@@ -45,8 +45,8 @@ export default function Settings() {
     }
 
     const clientId = functionData.clientId;
-    // Use a URL without slashes that Strava will accept
-    const redirectUri = `${window.location.origin}/functions/v1/strava`;
+    // Use the base domain for redirect (Strava doesn't like paths)
+    const redirectUri = `${window.location.protocol}//${window.location.host}`;
     const scope = "activity:read_all";
     
     const stravaAuthUrl = `https://www.strava.com/oauth/authorize?client_id=${clientId}&redirect_uri=${redirectUri}&response_type=code&scope=${scope}`;
