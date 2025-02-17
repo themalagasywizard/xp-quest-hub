@@ -3,7 +3,7 @@ import { useEffect, useState } from "react";
 import { Sidebar } from "@/components/Sidebar";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { Link2 } from "lucide-react";
+import { Link2, Check } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import { useSearchParams, useLocation } from "react-router-dom";
@@ -131,13 +131,17 @@ export default function Settings() {
                           : "Connect your Strava account to automatically track your fitness activities"}
                       </p>
                     </div>
-                    <Button
-                      variant={isStravaConnected ? "destructive" : "outline"}
-                      onClick={isStravaConnected ? handleStravaDisconnect : handleStravaConnect}
-                    >
-                      <Link2 className="mr-2" />
-                      {isStravaConnected ? "Disconnect" : "Connect"}
-                    </Button>
+                    {isStravaConnected ? (
+                      <Button variant="outline" className="text-green-500" disabled>
+                        <Check className="mr-2" />
+                        Connected
+                      </Button>
+                    ) : (
+                      <Button variant="outline" onClick={handleStravaConnect}>
+                        <Link2 className="mr-2" />
+                        Connect
+                      </Button>
+                    )}
                   </div>
                 </div>
               </CardContent>
