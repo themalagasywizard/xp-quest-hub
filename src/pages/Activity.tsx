@@ -1,3 +1,4 @@
+
 import { useState } from "react";
 import { format } from "date-fns";
 import { Calendar } from "@/components/ui/calendar";
@@ -24,24 +25,9 @@ interface ActivityLog {
   } | null;
 }
 
-interface CompletedQuest {
-  quest: {
-    title: string;
-    xp_reward: number;
-    skills: {
-      skill_name: string;
-      xp_share: number;
-      color: string;
-      icon: string;
-    }[];
-  };
-  completed_at: string;
-}
-
 interface DayActivities {
   totalXP: number;
   activities: ActivityLog[];
-  quests: CompletedQuest[];
 }
 
 const icons = {
@@ -73,46 +59,12 @@ export default function Activity() {
             color
           )
         `)
-        .eq('user_id', user.id);
+        .eq('user_id', user.id)
+        // Exclude activities that start with "Completed Quest:"
+        .not('activity_name', 'ilike', 'Completed Quest:%');
 
-      const { data: quests, error: questsError } = await supabase
-        .from('user_quests')
-        .select(`
-          completed_at,
-          quest:quests(
-            title,
-            xp_reward,
-            skills:quest_skills(
-              skill:skill_trees(
-                name,
-                color,
-                icon
-              ),
-              xp_share
-            )
-          )
-        `)
-        .eq('user_id', user.id);
-
-      if (logsError || questsError) throw new Error("Failed to fetch data");
-
-      const formattedQuests = quests.map((q) => ({
-        ...q,
-        quest: {
-          ...q.quest,
-          skills: q.quest.skills.map((s: any) => ({
-            skill_name: s.skill.name,
-            xp_share: s.xp_share,
-            color: s.skill.color,
-            icon: s.skill.icon,
-          })),
-        },
-      }));
-
-      return {
-        activities: logs || [],
-        quests: formattedQuests || [],
-      };
+      if (logsError) throw new Error("Failed to fetch data");
+      return logs || [];
     },
   });
 
@@ -121,21 +73,15 @@ export default function Activity() {
 
     const dateStr = format(date, 'yyyy-MM-dd');
     
-    const dayLogs = activities.activities.filter(
+    const dayLogs = activities.filter(
       (log) => format(new Date(log.created_at), 'yyyy-MM-dd') === dateStr
     );
 
-    const dayQuests = activities.quests.filter(
-      (quest) => format(new Date(quest.completed_at), 'yyyy-MM-dd') === dateStr
-    );
-
-    const totalXP = dayLogs.reduce((sum, log) => sum + log.xp_awarded, 0) +
-      dayQuests.reduce((sum, quest) => sum + quest.quest.xp_reward, 0);
+    const totalXP = dayLogs.reduce((sum, log) => sum + log.xp_awarded, 0);
 
     return {
       totalXP,
       activities: dayLogs,
-      quests: dayQuests,
     };
   };
 
@@ -170,9 +116,7 @@ export default function Activity() {
               modifiers={{
                 hasActivity: (date) => {
                   const dayData = getDayActivities(date);
-                  return dayData !== null && (
-                    dayData.activities.length > 0 || dayData.quests.length > 0
-                  );
+                  return dayData !== null && dayData.activities.length > 0;
                 },
               }}
               modifiersStyles={{
@@ -194,7 +138,7 @@ export default function Activity() {
       </main>
 
       <Dialog open={!!selectedDate} onOpenChange={() => setSelectedDate(undefined)}>
-        <DialogContent className="max-h-[90vh] overflow-y-auto">
+        <DialogContent>
           <DialogHeader>
             <DialogTitle>
               {selectedDate ? format(selectedDate, 'MMMM d, yyyy') : ''}
@@ -224,42 +168,6 @@ export default function Activity() {
                           <span>{activity.activity_name}</span>
                         </div>
                         <span className="font-medium">+{activity.xp_awarded} XP</span>
-                      </div>
-                    ))}
-                  </div>
-                </div>
-              )}
-
-              {dayActivities.quests.length > 0 && (
-                <div>
-                  <h3 className="font-semibold mb-3">Completed Quests</h3>
-                  <div className="space-y-2">
-                    {dayActivities.quests.map((quest, idx) => (
-                      <div
-                        key={idx}
-                        className="p-3 rounded-lg border space-y-2"
-                      >
-                        <div className="flex items-center justify-between">
-                          <span>{quest.quest.title}</span>
-                          <span className="font-medium">+{quest.quest.xp_reward} XP</span>
-                        </div>
-                        <div className="flex flex-wrap gap-2">
-                          {quest.quest.skills.map((skill, skillIdx) => (
-                            <div
-                              key={skillIdx}
-                              className="flex items-center gap-1 text-xs px-2 py-1 rounded-full"
-                              style={{
-                                backgroundColor: `${skill.color}20`,
-                                color: skill.color,
-                              }}
-                            >
-                              <span>{skill.skill_name}</span>
-                              {skill.xp_share !== 100 && (
-                                <span>({skill.xp_share}%)</span>
-                              )}
-                            </div>
-                          ))}
-                        </div>
                       </div>
                     ))}
                   </div>
