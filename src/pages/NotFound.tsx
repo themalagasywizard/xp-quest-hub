@@ -1,15 +1,24 @@
-import { useLocation } from "react-router-dom";
+
+import { useLocation, useNavigate } from "react-router-dom";
 import { useEffect } from "react";
 
 const NotFound = () => {
   const location = useLocation();
+  const navigate = useNavigate();
 
   useEffect(() => {
+    // Check if this is a Strava callback
+    if (location.search.includes('code=')) {
+      // Redirect to settings page with the same query parameters
+      navigate(`/settings${location.search}`, { replace: true });
+      return;
+    }
+
     console.error(
       "404 Error: User attempted to access non-existent route:",
       location.pathname
     );
-  }, [location.pathname]);
+  }, [location, navigate]);
 
   return (
     <div className="min-h-screen flex items-center justify-center bg-gray-100">
