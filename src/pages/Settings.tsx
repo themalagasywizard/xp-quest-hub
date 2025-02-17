@@ -26,8 +26,17 @@ export default function Settings() {
     setIsStravaConnected(!!data);
   };
 
-  const handleStravaConnect = () => {
-    const clientId = "YOUR_STRAVA_CLIENT_ID"; // Replace with your actual client ID
+  const handleStravaConnect = async () => {
+    const { data: functionData, error: functionError } = await supabase.functions.invoke('strava', {
+      body: { action: 'get_client_id' }
+    });
+
+    if (functionError) {
+      toast.error("Failed to initiate Strava connection");
+      return;
+    }
+
+    const clientId = functionData.clientId;
     const redirectUri = `${window.location.origin}/api/strava?action=callback`;
     const scope = "activity:read_all";
     

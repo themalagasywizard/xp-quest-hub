@@ -25,11 +25,23 @@ serve(async (req) => {
       { auth: { persistSession: false } }
     )
 
-    const url = new URL(req.url)
-    const action = url.searchParams.get('action')
+    const { action } = await req.json()
+
+    // Handle getting client ID
+    if (action === 'get_client_id') {
+      if (!STRAVA_CLIENT_ID) {
+        throw new Error('Strava client ID not configured')
+      }
+
+      return new Response(
+        JSON.stringify({ clientId: STRAVA_CLIENT_ID }),
+        { headers: { ...corsHeaders, 'Content-Type': 'application/json' }}
+      )
+    }
 
     // Handle OAuth callback from Strava
     if (action === 'callback') {
+      const url = new URL(req.url)
       const code = url.searchParams.get('code')
       if (!code) {
         throw new Error('No authorization code provided')
