@@ -25,9 +25,26 @@ interface ActivityLog {
   } | null;
 }
 
+interface CompletedQuest {
+  quest: {
+    title: string;
+    xp_reward: number;
+    skills: {
+      skill: {
+        name: string;
+        icon: string;
+        color: string;
+      }
+      xp_share: number;
+    }[]
+  };
+  completed_at: string;
+}
+
 interface DayActivities {
   totalXP: number;
   activities: ActivityLog[];
+  completedQuests: CompletedQuest[];
 }
 
 const icons = {
@@ -41,6 +58,7 @@ export default function Activity() {
   const [dayActivities, setDayActivities] = useState<DayActivities | null>(null);
   const isMobile = useIsMobile();
 
+  // Fetch regular activities
   const { data: activities } = useQuery({
     queryKey: ['activities'],
     queryFn: async () => {
@@ -60,7 +78,7 @@ export default function Activity() {
           )
         `)
         .eq('user_id', user.id)
-        // Exclude activities that start with "Completed Quest:"
+        // Exclude activities that start with "Completed Quest:" since they're internal
         .not('activity_name', 'ilike', 'Completed Quest:%');
 
       if (logsError) throw new Error("Failed to fetch data");
@@ -68,24 +86,61 @@ export default function Activity() {
     },
   });
 
+  // Fetch completed quests
+  const { data: completedQuests } = useQuery({
+    queryKey: ['completed_quests'],
+    queryFn: async () => {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) throw new Error("Not authenticated");
+
+      const { data: quests, error: questsError } = await supabase
+        .from('user_quests')
+        .select(`
+          completed_at,
+          quest:quests(
+            title,
+            xp_reward,
+            skills:quest_skills(
+              xp_share,
+              skill:skill_trees(
+                name,
+                icon,
+                color
+              )
+            )
+          )
+        `)
+        .eq('user_id', user.id);
+
+      if (questsError) throw new Error("Failed to fetch data");
+      return quests || [];
+    },
+  });
+
   const getDayActivities = (date: Date) => {
-    if (!activities) return null;
+    if (!activities && !completedQuests) return null;
 
     const dateStr = format(date, 'yyyy-MM-dd');
     
-    const dayLogs = activities.filter(
+    const dayLogs = activities?.filter(
       (log) => format(new Date(log.created_at), 'yyyy-MM-dd') === dateStr
-    );
+    ) || [];
 
-    const totalXP = dayLogs.reduce((sum, log) => sum + log.xp_awarded, 0);
+    const dayQuests = completedQuests?.filter(
+      (quest) => format(new Date(quest.completed_at), 'yyyy-MM-dd') === dateStr
+    ) || [];
+
+    const activitiesXP = dayLogs.reduce((sum, log) => sum + log.xp_awarded, 0);
+    const questsXP = dayQuests.reduce((sum, quest) => sum + quest.quest.xp_reward, 0);
 
     return {
-      totalXP,
+      totalXP: activitiesXP + questsXP,
       activities: dayLogs,
+      completedQuests: dayQuests,
     };
   };
 
-  const getActivityIcon = (activity: ActivityLog) => {
+  const getActivityIcon = (activity: ActivityLog | { skill: { icon: string; color: string } }) => {
     if (!activity.skill) return null;
     
     const IconComponent = icons[activity.skill.icon as keyof typeof icons] || Brain;
@@ -116,7 +171,9 @@ export default function Activity() {
               modifiers={{
                 hasActivity: (date) => {
                   const dayData = getDayActivities(date);
-                  return dayData !== null && dayData.activities.length > 0;
+                  return dayData !== null && (
+                    dayData.activities.length > 0 || dayData.completedQuests.length > 0
+                  );
                 },
               }}
               modifiersStyles={{
@@ -154,13 +211,33 @@ export default function Activity() {
                 </p>
               </div>
 
+              {dayActivities.completedQuests.length > 0 && (
+                <div>
+                  <h3 className="font-semibold mb-3">Completed Quests</h3>
+                  <div className="space-y-2">
+                    {dayActivities.completedQuests.map((quest, idx) => (
+                      <div
+                        key={`quest-${idx}`}
+                        className="flex items-center justify-between p-3 rounded-lg border"
+                      >
+                        <div className="flex items-center gap-3">
+                          {quest.quest.skills?.[0] && getActivityIcon(quest.quest.skills[0].skill)}
+                          <span>{quest.quest.title}</span>
+                        </div>
+                        <span className="font-medium">+{quest.quest.xp_reward} XP</span>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
+
               {dayActivities.activities.length > 0 && (
                 <div>
                   <h3 className="font-semibold mb-3">Activities</h3>
                   <div className="space-y-2">
                     {dayActivities.activities.map((activity, idx) => (
                       <div
-                        key={idx}
+                        key={`activity-${idx}`}
                         className="flex items-center justify-between p-3 rounded-lg border"
                       >
                         <div className="flex items-center gap-3">
