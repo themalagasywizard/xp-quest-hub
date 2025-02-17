@@ -35,15 +35,23 @@ Deno.serve(async (req) => {
     const { action, code } = requestBody;
     console.log('Action:', action, 'Code:', code);
 
-    // Initialize Supabase client
-    const supabaseUrl = Deno.env.get('SUPABASE_URL');
-    const supabaseKey = Deno.env.get('SUPABASE_ANON_KEY');
-    
-    if (!supabaseUrl || !supabaseKey) {
-      throw new Error('Missing Supabase credentials');
-    }
+    // Initialize Supabase client with service role key for admin operations
+    const supabaseAdmin = createClient(
+      Deno.env.get('SUPABASE_URL') ?? '',
+      Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? '',
+      {
+        auth: {
+          autoRefreshToken: false,
+          persistSession: false
+        }
+      }
+    );
 
-    const supabaseClient = createClient(supabaseUrl, supabaseKey);
+    // Initialize regular Supabase client for user operations
+    const supabaseClient = createClient(
+      Deno.env.get('SUPABASE_URL') ?? '',
+      Deno.env.get('SUPABASE_ANON_KEY') ?? ''
+    );
 
     if (action === 'get_client_id') {
       const clientId = Deno.env.get('STRAVA_CLIENT_ID');
@@ -118,9 +126,9 @@ Deno.serve(async (req) => {
 
       console.log('Found user:', user.id);
 
-      // Store the tokens
+      // Store the tokens using the admin client
       try {
-        const { error: insertError } = await supabaseClient
+        const { error: insertError } = await supabaseAdmin
           .from('strava_accounts')
           .upsert({
             user_id: user.id,
@@ -164,10 +172,10 @@ Deno.serve(async (req) => {
       const activities: StravaActivity[] = await activitiesResponse.json();
       console.log(`Found ${activities.length} recent activities`);
 
-      // Store activities and process for quest completion
+      // Store activities using the admin client
       for (const activity of activities) {
         // Store activity
-        const { error: activityError } = await supabaseClient
+        const { error: activityError } = await supabaseAdmin
           .from('strava_activities')
           .upsert({
             user_id: user.id,
@@ -181,65 +189,6 @@ Deno.serve(async (req) => {
         if (activityError && activityError.code !== '23505') {
           console.error('Error storing activity:', activityError);
           continue;
-        }
-
-        // Check for distance-based quests
-        if (activity.type === 'Run') {
-          const distanceInKm = activity.distance / 1000; // Convert meters to kilometers
-          console.log(`Processing run activity with distance: ${distanceInKm}km`);
-
-          const { data: distanceQuests, error: questError } = await supabaseClient
-            .from('quests')
-            .select('*')
-            .eq('completion_type', 'strava_distance');
-
-          if (questError) {
-            console.error('Error fetching distance quests:', questError);
-            continue;
-          }
-
-          for (const quest of distanceQuests) {
-            const requiredDistance = quest.completion_requirement?.required_distance;
-            if (distanceInKm >= requiredDistance) {
-              console.log(`User completed distance quest: ${quest.title}`);
-              
-              // Check if quest already completed
-              const { data: existingCompletion } = await supabaseClient
-                .from('user_quests')
-                .select('*')
-                .eq('user_id', user.id)
-                .eq('quest_id', quest.id)
-                .maybeSingle();
-
-              if (!existingCompletion) {
-                // Complete the quest
-                const { error: completionError } = await supabaseClient
-                  .from('user_quests')
-                  .insert({
-                    user_id: user.id,
-                    quest_id: quest.id
-                  });
-
-                if (completionError) {
-                  console.error('Error completing quest:', completionError);
-                  continue;
-                }
-
-                // Distribute XP
-                const { error: xpError } = await supabaseClient.rpc(
-                  'distribute_quest_xp',
-                  {
-                    p_user_id: user.id,
-                    p_quest_id: quest.id
-                  }
-                );
-
-                if (xpError) {
-                  console.error('Error distributing XP:', xpError);
-                }
-              }
-            }
-          }
         }
       }
 
