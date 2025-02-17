@@ -172,9 +172,15 @@ Deno.serve(async (req) => {
       const activities: StravaActivity[] = await activitiesResponse.json();
       console.log(`Found ${activities.length} recent activities`);
 
-      // Store activities using the admin client
+      // Process each activity
       for (const activity of activities) {
-        // Store activity
+        console.log('Processing activity:', {
+          id: activity.id,
+          type: activity.type,
+          distance: activity.distance
+        });
+
+        // Store activity using the admin client
         const { error: activityError } = await supabaseAdmin
           .from('strava_activities')
           .upsert({
@@ -189,6 +195,91 @@ Deno.serve(async (req) => {
         if (activityError && activityError.code !== '23505') {
           console.error('Error storing activity:', activityError);
           continue;
+        }
+
+        // For Run activities, check distance-based quests
+        if (activity.type === 'Run') {
+          const distanceInKm = activity.distance / 1000;
+          console.log(`Processing run activity with distance: ${distanceInKm}km`);
+
+          // Get distance-based quests
+          const { data: distanceQuests, error: questError } = await supabaseAdmin
+            .from('quests')
+            .select(`
+              *,
+              quest_skills (
+                skill_id,
+                xp_share
+              )
+            `)
+            .eq('completion_type', 'strava_distance')
+            .not('completion_requirement', 'is', null);
+
+          if (questError) {
+            console.error('Error fetching distance quests:', questError);
+            continue;
+          }
+
+          for (const quest of distanceQuests) {
+            const requiredDistance = quest.completion_requirement?.required_distance;
+            
+            if (!requiredDistance) {
+              console.log('Quest has no required distance:', quest);
+              continue;
+            }
+
+            console.log(`Checking quest "${quest.title}" - Required: ${requiredDistance}km, Actual: ${distanceInKm}km`);
+
+            if (distanceInKm >= requiredDistance) {
+              // Check if quest already completed this year
+              const { data: existingCompletion, error: completionCheckError } = await supabaseAdmin
+                .from('user_quests')
+                .select('*')
+                .eq('user_id', user.id)
+                .eq('quest_id', quest.id)
+                .gte('completed_at', new Date(new Date().getFullYear(), 0, 1).toISOString())
+                .maybeSingle();
+
+              if (completionCheckError) {
+                console.error('Error checking quest completion:', completionCheckError);
+                continue;
+              }
+
+              if (!existingCompletion) {
+                console.log(`Completing quest: ${quest.title}`);
+                
+                // Complete the quest
+                const { error: completionError } = await supabaseAdmin
+                  .from('user_quests')
+                  .insert({
+                    user_id: user.id,
+                    quest_id: quest.id
+                  });
+
+                if (completionError) {
+                  console.error('Error completing quest:', completionError);
+                  continue;
+                }
+
+                // Distribute XP
+                const { error: xpError } = await supabaseAdmin.rpc(
+                  'distribute_quest_xp',
+                  {
+                    p_user_id: user.id,
+                    p_quest_id: quest.id
+                  }
+                );
+
+                if (xpError) {
+                  console.error('Error distributing XP:', xpError);
+                } else {
+                  console.log(`Successfully completed quest and distributed XP for: ${quest.title}`);
+                }
+              } else {
+                console.log(`Quest "${quest.title}" already completed this year`);
+              }
+            }
+          }
         }
       }
 
