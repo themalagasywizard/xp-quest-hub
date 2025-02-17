@@ -1,4 +1,3 @@
-
 import { useState } from "react";
 import { format } from "date-fns";
 import { Calendar } from "@/components/ui/calendar";
@@ -140,11 +139,9 @@ export default function Activity() {
     };
   };
 
-  const getActivityIcon = (activity: ActivityLog | { skill: { icon: string; color: string } }) => {
-    if (!activity.skill) return null;
-    
-    const IconComponent = icons[activity.skill.icon as keyof typeof icons] || Brain;
-    return <IconComponent className="h-4 w-4" style={{ color: activity.skill.color }} />;
+  const getActivityIcon = (skillInfo: { icon: string; color: string }) => {
+    const IconComponent = icons[skillInfo.icon as keyof typeof icons] || Brain;
+    return <IconComponent className="h-4 w-4" style={{ color: skillInfo.color }} />;
   };
 
   const handleDayClick = (date: Date | undefined) => {
@@ -221,7 +218,7 @@ export default function Activity() {
                         className="flex items-center justify-between p-3 rounded-lg border"
                       >
                         <div className="flex items-center gap-3">
-                          {quest.quest.skills?.[0] && getActivityIcon(quest.quest.skills[0].skill)}
+                          {quest.quest.skills?.[0]?.skill && getActivityIcon(quest.quest.skills[0].skill)}
                           <span>{quest.quest.title}</span>
                         </div>
                         <span className="font-medium">+{quest.quest.xp_reward} XP</span>
@@ -241,7 +238,7 @@ export default function Activity() {
                         className="flex items-center justify-between p-3 rounded-lg border"
                       >
                         <div className="flex items-center gap-3">
-                          {getActivityIcon(activity)}
+                          {activity.skill && getActivityIcon(activity.skill)}
                           <span>{activity.activity_name}</span>
                         </div>
                         <span className="font-medium">+{activity.xp_awarded} XP</span>
