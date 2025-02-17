@@ -1,4 +1,3 @@
-
 // Import the createClient from Supabase
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2'
 
@@ -231,24 +230,8 @@ Deno.serve(async (req) => {
             console.log(`Checking quest "${quest.title}" - Required: ${requiredDistance}km, Actual: ${distanceInKm}km`);
 
             if (distanceInKm >= requiredDistance) {
-              // Check if quest already completed this year
-              const { data: existingCompletion, error: completionCheckError } = await supabaseAdmin
-                .from('user_quests')
-                .select('*')
-                .eq('user_id', user.id)
-                .eq('quest_id', quest.id)
-                .gte('completed_at', new Date(new Date().getFullYear(), 0, 1).toISOString())
-                .maybeSingle();
-
-              if (completionCheckError) {
-                console.error('Error checking quest completion:', completionCheckError);
-                continue;
-              }
-
-              if (!existingCompletion) {
-                console.log(`Completing quest: ${quest.title}`);
-                
-                // Complete the quest
+              try {
+                // Try to insert the quest completion
                 const { error: completionError } = await supabaseAdmin
                   .from('user_quests')
                   .insert({
@@ -257,9 +240,18 @@ Deno.serve(async (req) => {
                   });
 
                 if (completionError) {
-                  console.error('Error completing quest:', completionError);
-                  continue;
+                  if (completionError.code === '23505') {
+                    // This is a duplicate completion - skip it silently
+                    console.log(`Quest "${quest.title}" was already completed`);
+                    continue;
+                  } else {
+                    console.error('Error completing quest:', completionError);
+                    continue;
+                  }
                 }
+
+                // If we got here, the quest was newly completed
+                console.log(`Successfully completed quest: ${quest.title}`);
 
                 // Distribute XP
                 const { error: xpError } = await supabaseAdmin.rpc(
@@ -273,10 +265,11 @@ Deno.serve(async (req) => {
                 if (xpError) {
                   console.error('Error distributing XP:', xpError);
                 } else {
-                  console.log(`Successfully completed quest and distributed XP for: ${quest.title}`);
+                  console.log(`Successfully distributed XP for quest: ${quest.title}`);
                 }
-              } else {
-                console.log(`Quest "${quest.title}" already completed this year`);
+              } catch (error) {
+                console.error('Error processing quest completion:', error);
+                continue;
               }
             }
           }
