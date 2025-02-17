@@ -17,6 +17,8 @@ export function useQuests() {
 
     const interval = setInterval(() => {
       setNow(new Date());
+      // Refresh completed quests periodically to check for expired completions
+      fetchCompletedQuests();
     }, 60000);
 
     return () => clearInterval(interval);
@@ -66,16 +68,19 @@ export function useQuests() {
     const { data: { user } } = await supabase.auth.getUser();
     if (!user) return;
 
+    // Fetch all completed quests for the user
     const { data, error } = await supabase
       .from('user_quests')
       .select('*')
-      .eq('user_id', user.id);
+      .eq('user_id', user.id)
+      .order('completed_at', { ascending: false });
 
     if (error) {
       toast.error("Failed to fetch completed quests");
       return;
     }
 
+    console.log('Fetched completed quests:', data);
     setCompletedQuests(data);
   };
 
@@ -137,7 +142,7 @@ export function useQuests() {
       }
 
       toast.success(`Quest completed! XP distributed to relevant skills`);
-      setCompletedQuests(prev => [...prev, data]);
+      await fetchCompletedQuests(); // Refresh the completed quests immediately
       window.dispatchEvent(new CustomEvent('xp-updated'));
     } catch (err) {
       console.error("Quest completion error:", err);
@@ -148,6 +153,12 @@ export function useQuests() {
   const isQuestCompleted = (questId: string) => {
     const completedQuest = completedQuests.find(cq => cq.quest_id === questId);
     if (!completedQuest) return false;
+
+    console.log('Checking completion for quest:', questId, {
+      completedQuest,
+      now,
+      resetTime: new Date(completedQuest.reset_time)
+    });
 
     const resetTime = new Date(completedQuest.reset_time);
     return now < resetTime;
