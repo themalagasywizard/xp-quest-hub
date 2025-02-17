@@ -76,8 +76,8 @@ export default function Settings() {
     }
 
     const clientId = functionData.clientId;
-    // Ensure we redirect back to the settings page
-    const redirectUri = `${window.location.origin}/settings`;
+    // Use root domain for redirect
+    const redirectUri = window.location.origin;
     const scope = "activity:read_all";
     
     const stravaAuthUrl = `https://www.strava.com/oauth/authorize?client_id=${clientId}&redirect_uri=${redirectUri}&response_type=code&scope=${scope}`;

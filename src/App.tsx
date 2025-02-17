@@ -15,6 +15,25 @@ import { Toaster } from "@/components/ui/toaster";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import Activity from "@/pages/Activity";
 import Profile from "@/pages/Profile";
+import { useLocation, useNavigate } from "react-router-dom";
+import { useEffect } from "react";
+
+// Handle root level redirects
+function RootRedirect() {
+  const location = useLocation();
+  const navigate = useNavigate();
+
+  useEffect(() => {
+    // Check if this is a Strava callback
+    if (location.search.includes('code=')) {
+      navigate(`/settings${location.search}`, { replace: true });
+    } else {
+      navigate('/dashboard', { replace: true });
+    }
+  }, [location, navigate]);
+
+  return null;
+}
 
 const queryClient = new QueryClient();
 
@@ -24,7 +43,7 @@ export default function App() {
       <ThemeProvider defaultTheme="dark" storageKey="vite-ui-theme">
         <Router>
           <Routes>
-            <Route path="/" element={<Navigate to="/dashboard" />} />
+            <Route path="/" element={<RootRedirect />} />
             <Route path="/dashboard" element={<Dashboard />} />
             <Route path="/quests" element={<Quests />} />
             <Route path="/activity" element={<Activity />} />
