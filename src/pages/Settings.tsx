@@ -28,7 +28,8 @@ export default function Settings() {
     const { data } = await supabase
       .from('strava_accounts')
       .select('id')
-      .single();
+      .eq('user_id', session.user.id)
+      .maybeSingle();
 
     setIsStravaConnected(!!data);
   };
@@ -54,10 +55,13 @@ export default function Settings() {
   };
 
   const handleStravaDisconnect = async () => {
+    const { data: { session } } = await supabase.auth.getSession();
+    if (!session) return;
+
     const { error } = await supabase
       .from('strava_accounts')
       .delete()
-      .single();
+      .eq('user_id', session.user.id);
 
     if (error) {
       toast.error("Failed to disconnect Strava");
