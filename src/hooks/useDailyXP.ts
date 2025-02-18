@@ -11,9 +11,10 @@ export function useDailyXP() {
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) return;
 
-      // Get start of today in ISO format for the user's timezone
+      // Get start and end of today in ISO format
       const today = new Date();
-      today.setHours(0, 0, 0, 0);
+      const startOfDay = new Date(today.getFullYear(), today.getMonth(), today.getDate());
+      const endOfDay = new Date(today.getFullYear(), today.getMonth(), today.getDate(), 23, 59, 59, 999);
 
       // Get today's XP from activities
       const { data: activityData, error: activityError } = await supabase
@@ -28,7 +29,8 @@ export function useDailyXP() {
           )
         `)
         .eq('user_id', user.id)
-        .gte('created_at', today.toISOString());
+        .gte('created_at', startOfDay.toISOString())
+        .lte('created_at', endOfDay.toISOString());
 
       if (activityError) throw activityError;
       console.log('Activity data for today:', activityData);
