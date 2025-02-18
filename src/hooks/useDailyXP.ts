@@ -14,38 +14,12 @@ export function useDailyXP() {
       // Get today's date as YYYY-MM-DD for consistent date comparison
       const today = new Date().toISOString().split('T')[0];
 
-      // Get today's XP from activities
-      const { data: activityData, error: activityError } = await supabase
-        .from('activity_log')
-        .select(`
-          xp_awarded,
-          created_at,
-          skill:skill_trees(
-            name,
-            icon,
-            color
-          )
-        `)
-        .eq('user_id', user.id)
-        .filter('created_at', 'gte', `${today}T00:00:00`)
-        .filter('created_at', 'lt', `${today}T23:59:59.999`);
-
-      if (activityError) throw activityError;
-      console.log('Activity data for today:', activityData);
-
-      // Get today's XP from completed quests
+      // First, get quest completions for today
       const { data: questData, error: questError } = await supabase
         .from('user_quests')
         .select(`
           quest:quests (
-            xp_reward,
-            skills:quest_skills (
-              skill:skill_trees (
-                name,
-                icon,
-                color
-              )
-            )
+            xp_reward
           )
         `)
         .eq('user_id', user.id)
@@ -54,10 +28,14 @@ export function useDailyXP() {
       if (questError) throw questError;
       console.log('Quest data for today:', questData);
 
-      const activityXP = activityData?.reduce((sum, activity) => sum + activity.xp_awarded, 0) || 0;
-      const questXP = questData?.reduce((sum, entry) => sum + entry.quest.xp_reward, 0) || 0;
-      
-      setTodayXP(activityXP + questXP);
+      // Calculate total XP from quests
+      const questXP = questData?.reduce((sum, entry) => {
+        // Make sure we have valid quest data before adding XP
+        return sum + (entry.quest?.xp_reward || 0);
+      }, 0) || 0;
+
+      // Set the total XP (for now, just from quests)
+      setTodayXP(questXP);
     } catch (error: any) {
       console.error('Error fetching daily XP:', error);
       toast.error(error.message);
@@ -70,17 +48,6 @@ export function useDailyXP() {
     // Listen for updates to refresh the XP
     const channel = supabase
       .channel('schema-db-changes')
-      .on(
-        'postgres_changes',
-        {
-          event: '*',
-          schema: 'public',
-          table: 'activity_log'
-        },
-        () => {
-          getTodayXP();
-        }
-      )
       .on(
         'postgres_changes',
         {
