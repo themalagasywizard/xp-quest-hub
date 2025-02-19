@@ -4,7 +4,10 @@ import {
   Routes,
   Route,
   Navigate,
+  useLocation,
+  useNavigate,
 } from "react-router-dom";
+import { useEffect } from "react";
 import { ThemeProvider } from "@/components/ui/theme-provider";
 import Dashboard from "@/pages/Dashboard";
 import Quests from "@/pages/Quests";
@@ -16,7 +19,6 @@ import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import Activity from "@/pages/Activity";
 import Profile from "@/pages/Profile";
 import Perks from "@/pages/Perks";
-import { useLocation, useNavigate } from "react-router-dom";
 
 // Handle root level redirects
 function RootRedirect() {

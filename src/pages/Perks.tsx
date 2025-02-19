@@ -2,14 +2,14 @@
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { PerkTree } from "@/components/perks/PerkTree";
 import { Layout } from "@/components/Layout";
-import { Tree } from "lucide-react";
+import { Trees } from "lucide-react";
 
 export default function Perks() {
   return (
     <Layout>
       <div className="container py-6 space-y-8">
         <header className="flex items-center gap-4">
-          <Tree className="h-6 w-6 text-primary" />
+          <Trees className="h-6 w-6 text-primary" />
           <div>
             <h1 className="text-2xl font-bold">Perk Trees</h1>
             <p className="text-muted-foreground">

@@ -67,10 +67,12 @@ export function PerkTree({ path }: PerkTreeProps) {
       .attr("class", "link")
       .attr("fill", "none")
       .attr("stroke", "hsl(var(--border))")
-      .attr("d", d3.linkHorizontal()
-        .x((d: any) => d.y)
-        .y((d: any) => d.x)
-      );
+      .attr("d", (d: any) => {
+        return `M${d.target.y},${d.target.x}
+                C${(d.source.y + d.target.y) / 2},${d.target.x}
+                 ${(d.source.y + d.target.y) / 2},${d.source.x}
+                 ${d.source.y},${d.source.x}`;
+      });
 
     // Add nodes
     const nodes = svg.selectAll(".node")
