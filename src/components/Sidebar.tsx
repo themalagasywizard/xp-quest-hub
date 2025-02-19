@@ -1,12 +1,13 @@
 
 import { Button } from "@/components/ui/button";
-import { LayoutDashboard, Target, LineChart, Settings } from "lucide-react";
+import { LayoutDashboard, Target, LineChart, Settings, Tree } from "lucide-react";
 import { useNavigate, useLocation } from "react-router-dom";
 
 const menuItems = [
   { icon: LayoutDashboard, label: "Dashboard", path: "/dashboard" },
   { icon: Target, label: "Quests", path: "/quests" },
   { icon: LineChart, label: "Activity", path: "/activity" },
+  { icon: Tree, label: "Perks", path: "/perks" },
   { icon: Settings, label: "Settings", path: "/settings" },
 ];
 

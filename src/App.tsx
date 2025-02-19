@@ -15,8 +15,8 @@ import { Toaster } from "@/components/ui/toaster";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import Activity from "@/pages/Activity";
 import Profile from "@/pages/Profile";
+import Perks from "@/pages/Perks";
 import { useLocation, useNavigate } from "react-router-dom";
-import { useEffect } from "react";
 
 // Handle root level redirects
 function RootRedirect() {
@@ -47,6 +47,7 @@ export default function App() {
             <Route path="/dashboard" element={<Dashboard />} />
             <Route path="/quests" element={<Quests />} />
             <Route path="/activity" element={<Activity />} />
+            <Route path="/perks" element={<Perks />} />
             <Route path="/settings" element={<Settings />} />
             <Route path="/profile" element={<Profile />} />
             <Route path="/auth" element={<Auth />} />
