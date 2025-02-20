@@ -1,4 +1,3 @@
-
 import { useEffect, useState } from "react";
 import { Brain, Dumbbell, Palette, Book, Heart } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
@@ -22,11 +21,9 @@ const iconMap = {
   heart: Heart,
 };
 
-// Constants for XP calculation
 const BASE_XP = 100;
 const GROWTH_FACTOR = 1.5;
 
-// Color gradients for different level ranges
 const getLevelGradient = (level: number) => {
   if (level === 0) return "from-blue-400 to-blue-500";
   if (level === 1) return "from-green-400 to-green-500";
@@ -42,13 +39,12 @@ export function SkillTreeProgress() {
   useEffect(() => {
     getSkillProgress();
     
-    // Set up realtime subscription to activity_log changes with both INSERT and UPDATE events
     const channel = supabase
       .channel('skill-progress-changes')
       .on(
         'postgres_changes',
         {
-          event: '*', // Listen to all events
+          event: '*',
           schema: 'public',
           table: 'activity_log',
         },
@@ -57,27 +53,31 @@ export function SkillTreeProgress() {
           getSkillProgress();
         }
       )
+      .on(
+        'postgres_changes',
+        {
+          event: '*',
+          schema: 'public',
+          table: 'user_skills',
+        },
+        (payload) => {
+          console.log('User skills change detected:', payload);
+          getSkillProgress();
+        }
+      )
       .subscribe((status) => {
         console.log('Realtime subscription status:', status);
       });
 
-    // Listen for XP update events
     const handleXpUpdate = () => {
       console.log('XP update event received, refreshing skill progress');
       getSkillProgress();
     };
     window.addEventListener('xp-updated', handleXpUpdate);
     
-    // Force an initial refresh
-    const initialRefreshTimeout = setTimeout(() => {
-      console.log('Performing initial refresh');
-      getSkillProgress();
-    }, 1000);
-    
     return () => {
       window.removeEventListener('xp-updated', handleXpUpdate);
       supabase.removeChannel(channel);
-      clearTimeout(initialRefreshTimeout);
     };
   }, []);
 
@@ -109,59 +109,37 @@ export function SkillTreeProgress() {
 
       console.log('Fetching skill progress for user:', user.id);
 
-      // First fetch all skills
-      const { data: skillsData, error: skillsError } = await supabase
-        .from('skill_trees')
-        .select('*')
-        .order('name');
-
-      if (skillsError) {
-        console.error('Error fetching skills:', skillsError);
-        throw skillsError;
-      }
-
-      // Then fetch all activity logs for this user
-      const { data: logs, error: logsError } = await supabase
-        .from('activity_log')
-        .select('skill_id, xp_awarded, created_at')
+      const { data: userSkills, error: userSkillsError } = await supabase
+        .from('user_skills')
+        .select(`
+          skill_id,
+          xp,
+          level,
+          skill:skill_trees (
+            name,
+            icon,
+            color
+          )
+        `)
         .eq('user_id', user.id);
 
-      if (logsError) {
-        console.error('Error fetching logs:', logsError);
-        throw logsError;
+      if (userSkillsError) {
+        console.error('Error fetching user skills:', userSkillsError);
+        throw userSkillsError;
       }
 
-      console.log('Activity logs found:', logs?.length || 0);
+      console.log('User skills found:', userSkills);
 
-      // Process each skill with detailed logging
-      const formattedSkills = skillsData.map(skill => {
-        // Get all activity logs for this skill
-        const skillLogs = logs?.filter(log => log.skill_id === skill.id) || [];
-        
-        // Sum up all XP for this skill
-        const totalXP = skillLogs.reduce((sum, log) => sum + (log.xp_awarded || 0), 0);
-        
-        // Calculate level based on total XP
-        const level = calculateLevel(totalXP);
+      const formattedSkills = userSkills.map(userSkill => ({
+        skill_id: userSkill.skill_id,
+        name: userSkill.skill.name,
+        icon: userSkill.skill.icon,
+        color: userSkill.skill.color,
+        xp: userSkill.xp || 0,
+        level: userSkill.level || 0,
+      }));
 
-        console.log(`Skill ${skill.name}:`, {
-          totalXP,
-          level,
-          logsCount: skillLogs.length,
-          recentLogs: skillLogs.slice(-3)
-        });
-
-        return {
-          skill_id: skill.id,
-          name: skill.name,
-          icon: skill.icon,
-          color: skill.color,
-          xp: totalXP,
-          level: level,
-        };
-      });
-
-      console.log('Updated skills state:', formattedSkills);
+      console.log('Formatted skills:', formattedSkills);
       setSkills(formattedSkills);
     } catch (error: any) {
       console.error('Error fetching skill progress:', error);
