@@ -3,6 +3,7 @@ import { useEffect, useState } from "react";
 import { Brain, Dumbbell, Palette, Book, Heart } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
+import { Progress } from "@/components/ui/progress";
 
 interface SkillProgress {
   skill_id: string;
@@ -41,13 +42,33 @@ export function SkillTreeProgress() {
   useEffect(() => {
     getSkillProgress();
     
+    // Set up realtime subscription to activity_log changes
+    const channel = supabase
+      .channel('skill-progress-changes')
+      .on(
+        'postgres_changes',
+        {
+          event: 'INSERT',
+          schema: 'public',
+          table: 'activity_log'
+        },
+        () => {
+          console.log('Activity log updated, refreshing skill progress');
+          getSkillProgress();
+        }
+      )
+      .subscribe();
+
+    // Listen for XP update events
     const handleXpUpdate = () => {
+      console.log('XP update event received, refreshing skill progress');
       getSkillProgress();
     };
     window.addEventListener('xp-updated', handleXpUpdate);
     
     return () => {
       window.removeEventListener('xp-updated', handleXpUpdate);
+      supabase.removeChannel(channel);
     };
   }, []);
 
@@ -74,6 +95,8 @@ export function SkillTreeProgress() {
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) return;
 
+      console.log('Fetching skill progress for user:', user.id);
+
       const { data: skillsData, error: skillsError } = await supabase
         .from('skill_trees')
         .select('*')
@@ -84,6 +107,7 @@ export function SkillTreeProgress() {
         throw skillsError;
       }
 
+      // Fetch all activity logs for this user
       const { data: logs, error: logsError } = await supabase
         .from('activity_log')
         .select('skill_id, xp_awarded')
@@ -93,6 +117,8 @@ export function SkillTreeProgress() {
         console.error('Error fetching logs:', logsError);
         throw logsError;
       }
+
+      console.log('Activity logs found:', logs?.length || 0);
 
       // Process each skill
       const formattedSkills = skillsData.map(skill => {
@@ -104,6 +130,8 @@ export function SkillTreeProgress() {
         
         // Calculate level based on total XP
         const level = calculateLevel(totalXP);
+
+        console.log(`Skill ${skill.name}: XP=${totalXP}, Level=${level}`);
 
         return {
           skill_id: skill.id,
