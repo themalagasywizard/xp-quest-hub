@@ -42,22 +42,24 @@ export function SkillTreeProgress() {
   useEffect(() => {
     getSkillProgress();
     
-    // Set up realtime subscription to activity_log changes
+    // Set up realtime subscription to activity_log changes with both INSERT and UPDATE events
     const channel = supabase
       .channel('skill-progress-changes')
       .on(
         'postgres_changes',
         {
-          event: 'INSERT',
+          event: '*', // Listen to all events
           schema: 'public',
-          table: 'activity_log'
+          table: 'activity_log',
         },
-        () => {
-          console.log('Activity log updated, refreshing skill progress');
+        (payload) => {
+          console.log('Activity log change detected:', payload);
           getSkillProgress();
         }
       )
-      .subscribe();
+      .subscribe((status) => {
+        console.log('Realtime subscription status:', status);
+      });
 
     // Listen for XP update events
     const handleXpUpdate = () => {
@@ -66,9 +68,16 @@ export function SkillTreeProgress() {
     };
     window.addEventListener('xp-updated', handleXpUpdate);
     
+    // Force an initial refresh
+    const initialRefreshTimeout = setTimeout(() => {
+      console.log('Performing initial refresh');
+      getSkillProgress();
+    }, 1000);
+    
     return () => {
       window.removeEventListener('xp-updated', handleXpUpdate);
       supabase.removeChannel(channel);
+      clearTimeout(initialRefreshTimeout);
     };
   }, []);
 
@@ -93,10 +102,14 @@ export function SkillTreeProgress() {
   async function getSkillProgress() {
     try {
       const { data: { user } } = await supabase.auth.getUser();
-      if (!user) return;
+      if (!user) {
+        console.log('No user found, skipping skill progress fetch');
+        return;
+      }
 
       console.log('Fetching skill progress for user:', user.id);
 
+      // First fetch all skills
       const { data: skillsData, error: skillsError } = await supabase
         .from('skill_trees')
         .select('*')
@@ -107,10 +120,10 @@ export function SkillTreeProgress() {
         throw skillsError;
       }
 
-      // Fetch all activity logs for this user
+      // Then fetch all activity logs for this user
       const { data: logs, error: logsError } = await supabase
         .from('activity_log')
-        .select('skill_id, xp_awarded')
+        .select('skill_id, xp_awarded, created_at')
         .eq('user_id', user.id);
 
       if (logsError) {
@@ -120,7 +133,7 @@ export function SkillTreeProgress() {
 
       console.log('Activity logs found:', logs?.length || 0);
 
-      // Process each skill
+      // Process each skill with detailed logging
       const formattedSkills = skillsData.map(skill => {
         // Get all activity logs for this skill
         const skillLogs = logs?.filter(log => log.skill_id === skill.id) || [];
@@ -131,7 +144,12 @@ export function SkillTreeProgress() {
         // Calculate level based on total XP
         const level = calculateLevel(totalXP);
 
-        console.log(`Skill ${skill.name}: XP=${totalXP}, Level=${level}`);
+        console.log(`Skill ${skill.name}:`, {
+          totalXP,
+          level,
+          logsCount: skillLogs.length,
+          recentLogs: skillLogs.slice(-3)
+        });
 
         return {
           skill_id: skill.id,
@@ -143,6 +161,7 @@ export function SkillTreeProgress() {
         };
       });
 
+      console.log('Updated skills state:', formattedSkills);
       setSkills(formattedSkills);
     } catch (error: any) {
       console.error('Error fetching skill progress:', error);
